@@ -1,6 +1,8 @@
+![screenshot_1](https://github.com/polygontwist/splinewriter/blob/master/work/screenshot1.png)
+
 # Wozu das ganze?
 
-Mit diesem Programm kann man Zeichnungen erstellen um sie später auszuplotten.
+Ich brauchte ein Programm mitdem man Zeichnungen erstellen kann, um sie später auszuplotten.
 
 Die Zeichnungen werden im gcode-Format gespeichert.
 
