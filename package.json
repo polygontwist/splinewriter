@@ -1,0 +1,31 @@
+{
+  "name": "SplineWriter",
+  "productName": "SplineWriter",
+  "description": "SplineWriter",
+  "version": "0.0.1",
+  "author": "Andreas Kosmehl (ak@a-d-k.de)",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "pack": "build --dir",
+    "dist": "build"
+  },
+  "keywords": [
+    "Spline","Writer"
+  ],
+  "homepage": "http://www.a-d-k.de",
+  "devDependencies": {
+    "electron-prebuilt": "^1.2.0"
+  },
+  "build": {
+    "appId": "de.adk.spw",
+    "mac": {
+      "category": "public.app-category.utilities"
+    },
+    "win": {
+      "icon": "build/icon.ico"
+    }
+  },
+  "dependencies": {
+  }
+}

@@ -1,0 +1,171 @@
+/*@charset "UTF-8";*/
+body{
+	background-color:#ddd;
+	margin:0;
+	padding:0;
+	font-family: Verdana,sans-serif;
+	font-size:13pt;
+	width:100%;
+	height:100%;
+	
+}
+body *{
+	box-sizing: border-box;
+}
+
+
+
+#myapplication{
+	width:100%;
+	height:100%;
+	overflow:hidden;
+	position: absolute;
+	/*background-color:#fff;*/
+}
+
+
+/*
+	| zeichenfeld | werkzeuge |
+
+*/
+
+#zeichenfeld{ 
+	position:absolute;
+	left:0;
+	top:0;
+	right:10px;
+	bottom:0;
+	background-color:#717171;
+}
+
+#canHG{
+	background-color:#ffffff;
+}
+
+
+#canVorlage{
+	
+	background-image:url("");
+	background-position:center;
+	background-repeat:no-repeat;
+	background-size: contain;
+}
+
+#canHG,#canVorlage,#canLines,#canDraw,#canZeichnung{
+	position:absolute;
+}
+#canDraw{
+	cursor:crosshair;
+}
+
+
+#werkzeuge{
+	background-color:#dddddd;
+	position:absolute;
+	width:300px;
+	top:0;
+	right:-290px;
+	bottom:0;
+	transition: right 0.25s linear 0s;
+	-webkit-transition: right 0.25s linear 0s;
+}
+#werkzeuge *{
+	vertical-align: top;
+}
+#werkzeuge .ocbutt{
+	position:fixed;
+	/*left:0px;*/
+	width:10px;
+	bottom:0;
+	top:0;
+	line-height:20px;
+	background-color:#aaaaaa;
+	outline:0;
+	cursor:w-resize;
+}
+
+#werkzeuge .block{
+	display:block;
+	padding:5px;
+	padding-left:15px;
+}
+
+#werkzeuge .block label{margin-right:2px;}
+#werkzeuge .block input{width:100px;}
+#werkzeuge .block span{margin-left:2px;}
+
+#werkzeuge .block input.button{width:90%;margin-left:5%;}
+
+#werkzeuge input:invalid{
+	outline:2px solid red;
+}
+
+.linetop{
+	border-top:1px solid #eaeaea;
+}
+
+.werkzeugeoffen #zeichenfeld{
+	right:300px;
+}
+.werkzeugeoffen #werkzeuge{
+	right:0px;
+	overflow: auto;
+}
+
+.labeltext{
+	min-width: 67px;
+    display: inline-block;
+}
+
+
+.booleanswitch{
+	display:none;/**/
+}
+input.booleanswitch ~ label{
+	cursor:pointer;
+	display:inline-block;
+	width:50px;
+	height:25px;
+	-webkit-border-radius:33px;
+	-moz-border-radius:33px;
+	border-radius:33px;
+	border:2px solid #666;
+	position:relative;
+	box-sizing: border-box;
+	margin-right: 53px; /*Bereich für Beschriftung*/
+}
+input.booleanswitch ~ label:before{
+	content:"";
+	-webkit-border-radius:33px;
+	-moz-border-radius:33px;
+	border-radius:33px;
+	background-color:#D17777;
+	width:19px;
+	height:19px;
+	display:inline-block;
+	position:absolute;
+	left:0;
+	top:1px;
+	box-sizing: border-box;
+	transition: all 0.25s linear 0s;
+	-webkit-transition: all 0.25s linear 0s;
+}
+input.booleanswitch:checked ~ label:before{
+	left:27px;
+	background-color:#77CE75;
+	/*right:0;*/
+}
+ 
+/*input.booleanswitch ~ label:after{
+	content:"nein";
+	position:absolute;
+	left:60px;
+}
+input.booleanswitch:checked ~ label:after{
+	content:"ja";
+}*/
+
+/* responsive */
+@media screen and (max-width: 650px) {
+	
+}
