@@ -1,4 +1,4 @@
-#Wozu das ganze?#
+# Wozu das ganze?
 
 Mit diesem Programm kann man Zeichnungen erstellen um sie später auszuplotten.
 
@@ -8,7 +8,7 @@ Für die Ausführung ist ein Gerät mit Marlin-Firmeware von nöten, das ein Ser
 Ich werde "Marlin 1.1.0-RC6" auf einem Rumba-Board nutzen.
 
 
-#Projekt bearbeiten#
+# Projekt bearbeiten
 
 Für die Bearbeitung diese Projektes benötigt man:<br>
 https://nodejs.org dabei ist der npm-Packetmanager<br>
