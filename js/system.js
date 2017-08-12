@@ -12,9 +12,34 @@ const {dialog, BrowserWindow} = remote;
 const fs = require('fs');
 
 
+
 var electron_app=function(){
 	var Programmeinstellungen={//als Einstellungen gespeichert
-		windowsize:{x:0,y:0,width:0,height:0}
+		windowsize:{x:0,y:0,width:0,height:0},
+		gcodeoptions:{
+			"servoport":"P0", //M280 P0 S50 ;S0..200
+			"servoUP":83,
+			"servoUPwriting":40,
+			"servoDown":0,
+			"servowaittime":300,//300ms warten, wenn up oder down
+			
+			"movespeed":1300,
+			"drawspeed":900,
+			
+			"endcode":"M84 \n", //disable motors
+				
+			"spiegelY":false,
+			"spiegelX":true			
+		},
+		drawoptions:{
+			//Line-Optimirungen
+			"abweichung":6,			//°Winkel
+			"abstandmin":0.8,  		//mm
+			"grobabweichung":80,	//°Winkel			
+		},
+		dateiio:{
+			"lastdateiname":""
+		}
 	};
 	
 	var appdata={
@@ -30,27 +55,7 @@ var electron_app=function(){
 	var path = require('path');
 	path.join(__dirname, 'templates');
 	//console.log(__dirname,path);
-	
-	var hardwaresettings={
-		"servoport":"P0", //M280 P0 S50 ;S0..200
-		"servoUP":83,
-		"servoUPwriting":40,
-		"servoDown":0,
-		"servowaittimecde":"G4 P300",//500ms warten
-		
-		"movespeed":1300,
-		"drawspeed":900,
-			
-		"spiegelY":false,
-		"spiegelX":true,
-		
-		//Line-Optimirungen
-		"abweichung":6,			//°Winkel
-		"abstandmin":0.8,  		//mm
-		"grobabweichung":80,	//°Winkel
-		
-		"lastdateiname":""
-	}
+
 	
 	//--basic--
 	var gE=function(id){if(id=="")return undefined; else return document.getElementById(id);}
@@ -213,7 +218,7 @@ var electron_app=function(){
 		
 		appdata.userbilder=app.app.getPath('pictures');
 		
-		getSettingsAtStart();//SetWindowSize
+		getSettingsAtStart();
 		
 
 		win.on('move',EventResize);
@@ -244,6 +249,7 @@ var electron_app=function(){
 		
 		werkzeuge=new oWerkzeuge(zielNode);
 		
+		zeichenfeld.resize();
 	}
 	
 	var oWerkzeuge=function(ziel){
@@ -255,6 +261,7 @@ var electron_app=function(){
 		var inpShowdots;
 		var inpShowdrawing;
 		
+		//--API--
 		this.get=function(sWert){
 			if(sWert=="width")	return parseInt(inpWidth.getVal());
 			if(sWert=="height")	return parseInt(inpHeight.getVal());
@@ -267,8 +274,10 @@ var electron_app=function(){
 			if(id=="AnzahlStriche")inpAnzahlStriche.setVal(parseFloat(wert));
 			if(id=="width")	inpWidth.setVal(parseInt(wert));
 			if(id=="height")inpHeight.setVal(parseInt(wert));
+			saveSettings();
 		}
 		
+		//--input-actions--
 		var wopenclose=function(e){
 			if( istClass(zielNode,"werkzeugeoffen") )
 				subClass(zielNode,"werkzeugeoffen");
@@ -282,6 +291,7 @@ var electron_app=function(){
 		
 		var changeElemente=function(v){
 			if(zeichenfeld)zeichenfeld.resize();
+			saveSettings();
 		}
 		
 		var clearDrawing=function(v){
@@ -296,7 +306,7 @@ var electron_app=function(){
 		var buttscaleM=function(v){if(zeichenfeld)zeichenfeld.scale("-");}
 		
 		var changeVPTrans=function(v){
-			if(zeichenfeld)zeichenfeld.setVorlageT(v);		
+			if(zeichenfeld)zeichenfeld.setVorlageTransparenz(v);		
 		}
 		
 		var loadvorlage=function(v){
@@ -325,7 +335,9 @@ var electron_app=function(){
 				};
 		}
 		
+		//--ini--		
 		var create=function(){
+			//
 			var div,inpbutt;
 			var node=cE(zielNode,"div","werkzeuge");
 			
@@ -451,6 +463,8 @@ var electron_app=function(){
 			"isstart":false
 		}
 		
+		//--API--
+		
 		this.resize=function(){
 			resizeZF();
 		}
@@ -504,8 +518,8 @@ var electron_app=function(){
 			var daten="; SplineWriter\n";
 			
 			
-			var movespeed=hardwaresettings.movespeed;
-			var drawspeed=hardwaresettings.drawspeed;
+			var movespeed=Programmeinstellungen.gcodeoptions.movespeed;
+			var drawspeed=Programmeinstellungen.gcodeoptions.drawspeed;
 			var yMul=1;
 			var xMul=1;
 			var yVersatz=0;//mm
@@ -521,12 +535,12 @@ var electron_app=function(){
 						if(p.y>maxY)maxY=p.y;
 				}
 			}
-			if(hardwaresettings.spiegelY){
+			if(Programmeinstellungen.gcodeoptions.spiegelY){
 				yMul=-1;
 				//yVersatz=maxY*10;
 				yVersatz=werkzeuge.get("height");
 			}
-			if(hardwaresettings.spiegelX){
+			if(Programmeinstellungen.gcodeoptions.spiegelX){
 				xMul=-1;
 				//xVersatz=maxX*10;
 				xVersatz=werkzeuge.get("width");
@@ -536,12 +550,13 @@ var electron_app=function(){
 			daten+="G90 ; use absolute coordinates"+"\n";
 			daten+="\n";
 			
+			daten+="M400 ; wait\n";// warten bis zuende bewegt
 			daten+="; servo up"+"\n";
-			daten+="M400\n";// warten bis zuendebewegt
 			daten+="M280 ";// M280 P0 S100 
-			daten+=hardwaresettings.servoport+" ";
-			daten+="S"+hardwaresettings.servoUP+"\n";
-			daten+=hardwaresettings.servowaittimecde+"\n\n";
+			daten+=Programmeinstellungen.gcodeoptions.servoport+" ";
+			daten+="S"+Programmeinstellungen.gcodeoptions.servoUP+"\n";
+			
+			daten+="G4 P"+Programmeinstellungen.gcodeoptions.servowaittime+"\n\n";//wait ms
 			
 			/* 
 			G1 X71.874 Y58.418 F1800.000
@@ -559,12 +574,12 @@ var electron_app=function(){
 						//moveTo
 						daten+= "G1 X"+xx+" Y"+yy+" F"+movespeed +"\n";
 						//+servo down
+						daten+="M400 ; wait\n";// warten bis zuende bewegt
 						daten+="; servo down" +"\n";
-						daten+="M400\n";// warten bis zuendebewegt
 						daten+="M280 ";// M280 P1 S50 
-						daten+=hardwaresettings.servoport+" ";
-						daten+="S"+hardwaresettings.servoDown+"\n";
-						daten+=hardwaresettings.servowaittimecde+"\n";
+						daten+=Programmeinstellungen.gcodeoptions.servoport+" ";
+						daten+="S"+Programmeinstellungen.gcodeoptions.servoDown+"\n";
+						daten+="G4 P"+Programmeinstellungen.gcodeoptions.servowaittime+"\n";
 			
 					}
 					else
@@ -576,30 +591,34 @@ var electron_app=function(){
 				}
 				if(linie.length>0){
 					//+servo up
+					daten+="M400 ; wait\n";// warten bis zuende bewegt
 					daten+="; servo up"+"\n";
-					daten+="M400\n";// warten bis zuendebewegt
+					
 					daten+="M280 ";// M280 P1 S50 
-					daten+=hardwaresettings.servoport+" ";
-					daten+="S"+hardwaresettings.servoUPwriting+"\n";
-					daten+=hardwaresettings.servowaittimecde+"\n\n";
+					daten+=Programmeinstellungen.gcodeoptions.servoport+" ";
+					daten+="S"+Programmeinstellungen.gcodeoptions.servoUPwriting+"\n";
+					daten+="G4 P"+Programmeinstellungen.gcodeoptions.servowaittime+"\n\n";
 				}
 			}
 						
 			daten+="; servo up"+"\n";// M280 P0 Sxxx
 			daten+="M280 ";
-			daten+=hardwaresettings.servoport+" ";
-			daten+="S"+Math.floor(hardwaresettings.servoUP*0.85)+"\n";
-			daten+=hardwaresettings.servowaittimecde+"\n\n";
+			daten+=Programmeinstellungen.gcodeoptions.servoport+" ";
+			daten+="S"+Math.floor(Programmeinstellungen.gcodeoptions.servoUP*0.85)+"\n";
+			
+			daten+="G4 P"+Programmeinstellungen.gcodeoptions.servowaittime+"\n\n";//wait
 			
 			daten+="; servo up"+"\n";// M280 P0 S83 
 			daten+="M280 ";
-			daten+=hardwaresettings.servoport+" ";
-			daten+="S"+hardwaresettings.servoUP+"\n";
-			daten+=hardwaresettings.servowaittimecde+"\n\n";
+			daten+=Programmeinstellungen.gcodeoptions.servoport+" ";
+			daten+="S"+Programmeinstellungen.gcodeoptions.servoUP+"\n";
 			
-			daten+="G1 X0 Y0 F"+drawspeed;
+			daten+="G4 P"+Programmeinstellungen.gcodeoptions.servowaittime+"\n\n";//wait
 			
-			daten+="M84     ; disable motors"+"\n";
+			daten+="G1 X0 Y0 F"+drawspeed;//move to 0,0
+			
+			daten+="\n";
+			daten+=Programmeinstellungen.gcodeoptions.endcode;
 			daten+="\n";
 			
 			
@@ -670,10 +689,12 @@ var electron_app=function(){
 		}
 		
 		
-		this.setVorlageT=function(v){
+		this.setVorlageTransparenz=function(v){
 			canvasVorlage.style.opacity=v;
 		}
 		
+		//--func--
+		//--maus/Tastatur--		
 		var mausmove=function(e){
 			var xy=relMouse(e,canvasDraw);
 		
@@ -804,6 +825,8 @@ var electron_app=function(){
 			}			
 		}
 		
+		
+		//--draw--
 		var showHGMuster=function(){//Raster 1cm
 			var cc=canvasLines.getContext('2d');
 			cc.clearRect(0, 0, canvasLines.width, canvasLines.height);
@@ -832,13 +855,7 @@ var electron_app=function(){
 			
 		}
 		
-		var loadVorlagenbild=function(fileName){
-			fileName=fileName.split("\\").join("/");
-			canvasVorlage.style.backgroundImage="url("+fileName+")";
-		}
-		
-		
-		
+				
 		var setStiftsizetopixel=function(cc){
 			//stiftsize=mm
 			stiftsize=werkzeuge.get("linewidth");//mm
@@ -882,9 +899,9 @@ var electron_app=function(){
 			
 			if(punkteliste.length<2)return punkteliste;
 			
-			var abweichung=hardwaresettings.abweichung;//°Winkel
-			var abstandmin=hardwaresettings.abstandmin;  //cm ?
-			var grobabweichung=hardwaresettings.grobabweichung;
+			var abweichung=Programmeinstellungen.drawoptions.abweichung;//°Winkel
+			var abstandmin=Programmeinstellungen.drawoptions.abstandmin;  //cm ?
+			var grobabweichung=Programmeinstellungen.drawoptions.grobabweichung;
 						
 			//mindestabstand + winkel
 			tmp.push(punkteliste[0]);//ersten
@@ -1070,42 +1087,13 @@ var electron_app=function(){
 			zeichnen();
 		}
 		
-		var create=function(){			
-			apptitel=document.title;
-			
-			basisnode=cE(zielNode,"div","zeichenfeld");
-			
-			canvasHG=cE(basisnode,"canvas","canHG");
-			canvasHG.style.left=rand+'px';
-			canvasHG.style.top=rand+'px';
-			
-			canvasVorlage=cE(basisnode,"canvas","canVorlage");
-			canvasVorlage.style.left=rand+'px';
-			canvasVorlage.style.top=rand+'px';
-			
-			canvasLines=cE(basisnode,"canvas","canLines");
-			canvasLines.style.left=rand+'px';
-			canvasLines.style.top=rand+'px';
-			
-			canvasZeichnung=cE(basisnode,"canvas","canZeichnung");
-			canvasZeichnung.style.left=rand+'px';
-			canvasZeichnung.style.top=rand+'px';
-			
-			canvasDraw=cE(basisnode,"canvas","canDraw");
-			canvasDraw.style.left=rand+'px';
-			canvasDraw.style.top=rand+'px';
-			
-			
-			canvasDraw.addEventListener('mousemove',mausmove,false );			
-			canvasDraw.addEventListener('mousedown',mausdown );
-			canvasDraw.addEventListener('mouseup',mausup );
-			canvasDraw.addEventListener('mouseout',mausout );
-			
-			window.addEventListener('keydown',keydown );
-			window.addEventListener('keyup',keyup );
-			window.addEventListener('resize',resizeZF );
-			
+		//--datei IO--
+		var loadVorlagenbild=function(fileName){
+			fileName=fileName.split("\\").join("/");
+			canvasVorlage.style.backgroundImage="url("+fileName+")";
 		}
+		
+		
 		
 		var rundeauf=function(val,stellen){
 			var i,st=1;
@@ -1115,9 +1103,9 @@ var electron_app=function(){
 			return Math.floor(val*st)/st;
 		}
 		var savedaten=function(daten){
-				var dn=hardwaresettings.lastdateiname;
+				var dn=Programmeinstellungen.dateiio.lastdateiname;
 				if(dn=="")dn=appdata.userdokumente;
-			console.log(dn,">",hardwaresettings.lastdateiname);
+			console.log(dn,">",Programmeinstellungen.dateiio.lastdateiname);
 					dialog.showSaveDialog(
 						{
 							defaultPath :dn,//+"/"+daten.filename,
@@ -1146,7 +1134,7 @@ var electron_app=function(){
 		
 		var loadGCode=function(fileName){
 			if(fileName=="")return;
-			hardwaresettings.lastdateiname=fileName;
+			Programmeinstellungen.dateiio.lastdateiname=fileName;
 			
 			var i,t,linie,s,bef,value,p,sval,
 				xx=0,
@@ -1163,11 +1151,11 @@ var electron_app=function(){
 			var isline=true;
 			
 			var yMul=1,xMul=1,yVersatz=0,xVersatz=0;
-			if(hardwaresettings.spiegelY){
+			if(Programmeinstellungen.gcodeoptions.spiegelY){
 				yMul=-1;
 				yVersatz=werkzeuge.get("height");
 			}
-			if(hardwaresettings.spiegelX){
+			if(Programmeinstellungen.gcodeoptions.spiegelX){
 				xMul=-1;
 				xVersatz=werkzeuge.get("width");
 			}
@@ -1195,7 +1183,7 @@ var electron_app=function(){
 						if(bef.indexOf('P')==0){}//Servoport
 						
 						if(bef.indexOf('S')==0){//Position (0=down)
-							if(value==hardwaresettings.servoDown){//0 new Line
+							if(value==Programmeinstellungen.gcodeoptions.servoDown){//0 new Line
 								linie=[];
 								linie.push({x:xx,y:yy,px:0,py:0});//Ausgangspunkt
 								isline=true;
@@ -1329,7 +1317,45 @@ var electron_app=function(){
 			
 		}
 		
-		//------------		
+		//--ini--
+		var create=function(){			
+			apptitel=document.title;
+			
+			basisnode=cE(zielNode,"div","zeichenfeld");
+			
+			canvasHG=cE(basisnode,"canvas","canHG");
+			canvasHG.style.left=rand+'px';
+			canvasHG.style.top=rand+'px';
+			
+			canvasVorlage=cE(basisnode,"canvas","canVorlage");
+			canvasVorlage.style.left=rand+'px';
+			canvasVorlage.style.top=rand+'px';
+			
+			canvasLines=cE(basisnode,"canvas","canLines");
+			canvasLines.style.left=rand+'px';
+			canvasLines.style.top=rand+'px';
+			
+			canvasZeichnung=cE(basisnode,"canvas","canZeichnung");
+			canvasZeichnung.style.left=rand+'px';
+			canvasZeichnung.style.top=rand+'px';
+			
+			canvasDraw=cE(basisnode,"canvas","canDraw");
+			canvasDraw.style.left=rand+'px';
+			canvasDraw.style.top=rand+'px';
+			
+			
+			canvasDraw.addEventListener('mousemove',mausmove,false );			
+			canvasDraw.addEventListener('mousedown',mausdown );
+			canvasDraw.addEventListener('mouseup',mausup );
+			canvasDraw.addEventListener('mouseout',mausout );
+			
+			window.addEventListener('keydown',keydown );
+			window.addEventListener('keyup',keyup );
+			window.addEventListener('resize',resizeZF );
+			
+			
+		}
+		
 		create();
 	}
 	
@@ -1344,6 +1370,7 @@ var electron_app=function(){
 		
 		var fchange=undefined;
 		
+		//--api--
 		this.setMinMaxStp=function(min,max,step){
 			if(min!=undefined){
 				input.min=min;
@@ -1381,6 +1408,8 @@ var electron_app=function(){
 			}
 		}
 		
+		
+		//--action--
 		var inpchange=function(e){
 			var senden=true;
 			
@@ -1393,6 +1422,7 @@ var electron_app=function(){
 				sendetimer=setTimeout(function(){fchange(input.value)},valsendenin);
 		}
 		
+		//--ini--
 		var create=function(){
 			blockdiv=cE(ziel,"div",undefined,"block");			
 			var label,span;
