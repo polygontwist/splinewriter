@@ -32,9 +32,15 @@ var electron_app=function(){
 	//console.log(__dirname,path);
 	
 	var hardwaresettings={
-		"servoport":"P1", //M280 P1 S50 ;S0..200
-		"servoUP":"S100",
-		"servoDown":"S0",
+		"servoport":"P0", //M280 P0 S50 ;S0..200
+		"servoUP":83,
+		"servoUPwriting":40,
+		"servoDown":0,
+		"servowaittimecde":"G4 P300",//500ms warten
+		
+		"movespeed":1300,
+		"drawspeed":900,
+			
 		"spiegelY":false,
 		"spiegelX":true,
 		
@@ -498,8 +504,8 @@ var electron_app=function(){
 			var daten="; SplineWriter\n";
 			
 			
-			var movespeed=1800;
-			var drawspeed=900;
+			var movespeed=hardwaresettings.movespeed;
+			var drawspeed=hardwaresettings.drawspeed;
 			var yMul=1;
 			var xMul=1;
 			var yVersatz=0;//mm
@@ -529,6 +535,14 @@ var electron_app=function(){
 			daten+="G21 ; set units to millimeters"+"\n";
 			daten+="G90 ; use absolute coordinates"+"\n";
 			daten+="\n";
+			
+			daten+="; servo up"+"\n";
+			daten+="M400\n";// warten bis zuendebewegt
+			daten+="M280 ";// M280 P0 S100 
+			daten+=hardwaresettings.servoport+" ";
+			daten+="S"+hardwaresettings.servoUP+"\n";
+			daten+=hardwaresettings.servowaittimecde+"\n\n";
+			
 			/* 
 			G1 X71.874 Y58.418 F1800.000
 			*/
@@ -546,9 +560,12 @@ var electron_app=function(){
 						daten+= "G1 X"+xx+" Y"+yy+" F"+movespeed +"\n";
 						//+servo down
 						daten+="; servo down" +"\n";
+						daten+="M400\n";// warten bis zuendebewegt
 						daten+="M280 ";// M280 P1 S50 
 						daten+=hardwaresettings.servoport+" ";
-						daten+=hardwaresettings.servoDown+"\n";
+						daten+="S"+hardwaresettings.servoDown+"\n";
+						daten+=hardwaresettings.servowaittimecde+"\n";
+			
 					}
 					else
 					if(pz==1)
@@ -557,13 +574,31 @@ var electron_app=function(){
 							daten+="G1 X"+xx+" Y"+yy +"\n";
 					
 				}
-				//+servo up
-				daten+="; servo up"+"\n";
-				daten+="M280 ";// M280 P1 S50 
-				daten+=hardwaresettings.servoport+" ";
-				daten+=hardwaresettings.servoUP+"\n";
+				if(linie.length>0){
+					//+servo up
+					daten+="; servo up"+"\n";
+					daten+="M400\n";// warten bis zuendebewegt
+					daten+="M280 ";// M280 P1 S50 
+					daten+=hardwaresettings.servoport+" ";
+					daten+="S"+hardwaresettings.servoUPwriting+"\n";
+					daten+=hardwaresettings.servowaittimecde+"\n\n";
+				}
 			}
 						
+			daten+="; servo up"+"\n";// M280 P0 Sxxx
+			daten+="M280 ";
+			daten+=hardwaresettings.servoport+" ";
+			daten+="S"+Math.floor(hardwaresettings.servoUP*0.85)+"\n";
+			daten+=hardwaresettings.servowaittimecde+"\n\n";
+			
+			daten+="; servo up"+"\n";// M280 P0 S83 
+			daten+="M280 ";
+			daten+=hardwaresettings.servoport+" ";
+			daten+="S"+hardwaresettings.servoUP+"\n";
+			daten+=hardwaresettings.servowaittimecde+"\n\n";
+			
+			daten+="G1 X0 Y0 F"+drawspeed;
+			
 			daten+="M84     ; disable motors"+"\n";
 			daten+="\n";
 			
@@ -1113,7 +1148,7 @@ var electron_app=function(){
 			if(fileName=="")return;
 			hardwaresettings.lastdateiname=fileName;
 			
-			var i,t,linie,s,bef,value,p,
+			var i,t,linie,s,bef,value,p,sval,
 				xx=0,
 				yy=0,
 				zz=0,
@@ -1153,15 +1188,23 @@ var electron_app=function(){
 				if(s[0]=="G21")factorToMM=1; 	//mm
 				
 				if(s[0]=="M280"){//Servo
-					for(t=1;t<s.length;t++){
-						if(s[t]==hardwaresettings.servoUP){//line fertig
-							zeichnung.push(linie);
-							isline=false;
-						}
-						if(s[t]==hardwaresettings.servoDown){//new Line
-							linie=[];
-							linie.push({x:xx,y:yy,px:0,py:0});//Ausgangspunkt
-							isline=true;
+					for(t=1;t<s.length;t++){// M280 P0 S110
+						bef=s[t];
+						value=parseInt(bef.slice(1));
+						
+						if(bef.indexOf('P')==0){}//Servoport
+						
+						if(bef.indexOf('S')==0){//Position (0=down)
+							if(value==hardwaresettings.servoDown){//0 new Line
+								linie=[];
+								linie.push({x:xx,y:yy,px:0,py:0});//Ausgangspunkt
+								isline=true;
+							}else{//UP
+								if(linie.length>0)zeichnung.push(linie);
+								linie=[];
+								isline=false;
+								
+							}
 						}
 					}
 				}
