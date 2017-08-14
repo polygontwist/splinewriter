@@ -473,6 +473,7 @@ var electron_app=function(){
 		var canvasVorlage;
 		var canvasLines;
 		var canvasZeichnung;
+		var ladebalken,ladebalkenf;
 		var canvasDraw;
 		var rand=10;//px
 		var apptitel="";
@@ -734,6 +735,18 @@ var electron_app=function(){
 		
 		
 		//--func--
+		var setLadebalken=function(v){
+			if(v==-1){
+				addClass(ladebalken,"off");
+				v=0;
+				}
+			else
+				subClass(ladebalken,"off");
+			
+			ladebalkenf.style.width=v+"%";
+		}
+		
+		
 		//--maus/Tastatur--		
 		//bei wacom leider anfangsphase ~ 5-8px als strich...
 		var mausmove=function(e){
@@ -938,7 +951,7 @@ var electron_app=function(){
 			return winkel;
 		}
 		
-		var Strichoptimieren=function(punkteliste){
+		var Strichoptimieren=function(punkteliste){//auf x/y optimieren (übernahme wenn x/y passig)
 			var i,p,pl,re=[],tmp=[],tmp2=[],abst,v,lastv,pwl,winkel,p2;	
 			
 			if(punkteliste.length<2)return punkteliste;
@@ -1066,7 +1079,7 @@ var electron_app=function(){
 		}
 		
 		var timer=undefined;
-		var showZeichnung=function(){
+		var showZeichnung=function(){//transformLinie x/y zu px/py
 			if(timer!=undefined)clearTimeout(timer);
 			var cc=canvasZeichnung.getContext('2d');
 			cc.clearRect(0, 0, canvasZeichnung.width, canvasZeichnung.height);
@@ -1178,10 +1191,13 @@ var electron_app=function(){
 			/**/			
 		}
 		
+		var calcytimer;
+		
 		var loadGCode=function(fileName){
 			if(fileName=="")return;
 			Programmeinstellungen.dateiio.lastdateiname=fileName;
-			
+			setLadebalken(0);
+			if(calcytimer!=undefined)clearTimeout(calcytimer);
 			var i,t,linie,s,bef,value,p,sval,
 				xx=0,
 				yy=0,
@@ -1215,6 +1231,7 @@ var electron_app=function(){
 			for(i=0;i<dlist.length;i++){
 				s=dlist[i].split(';')[0].toUpperCase().split(" ");
 				//console.log(s);
+				setLadebalken(100/dlist.length*i);
 				
 				if(s[0]=="G90"){} //absolute Position
 				
@@ -1356,114 +1373,155 @@ var electron_app=function(){
 				werkzeuge.set("height",Math.round(maxY+0.5));
 			}//mm
 			
+			setLadebalken(100);
 			resizeZF();
 			showZeichnung();
+			setLadebalken(-1);
 			
 		}
 		
 		var loadSVG=function(fileName){
-			zeichnung=[];//löschen
+			_this.clear();//alte Zeichnung löschen
+			setLadebalken(1);
+			if(calcytimer!=undefined)clearTimeout(calcytimer);
 			
 			//var DOMURL = window.URL || window.webkitURL || window;
 			var i,t,pfad,pl,property,svgpoint,drawline;
 			Programmeinstellungen.dateiio.lastdateiname=fileName.split('.svg').join('.gcode');
 			
+			var blattwidth=werkzeuge.get("width");
+			var blattheight=werkzeuge.get("height");
+			
 			var daten=fs.readFileSync(fileName, 'utf8');
-			//var svg = new Blob([daten], {type: 'image/svg+xml'});
-			//var url = DOMURL.createObjectURL(svg);
 			
 			var svgdoc=document.createElement('svg');
-			//svgdoc.setAttribute("type","image/svg+xml");
 			svgdoc.innerHTML=daten;
 			
 			var info=svgdoc.getElementsByTagName('svg')[0];
 			console.log(info.getAttribute("version"));
+			
+			if(info.getAttribute("viewBox")==null){
+				info.setAttribute("viewBox","0 0 "+info.getAttribute("width")+" "+info.getAttribute("height"));
+			}
 			console.log(info.getAttribute("viewBox"));//0 0 800 600
 			
 			var sarr=info.getAttribute("viewBox").split(' ');
+			
 			var dbox={"x":sarr[0],"y":sarr[1],"width":sarr[2],"height":sarr[3]};
-			var pxtommMul=Math.min(werkzeuge.get("height")/dbox.height, werkzeuge.get("width")/dbox.width);
+			var pxtommMul=Math.min(blattheight/dbox.height, blattwidth/dbox.width);
 			
-			console.log("mul",werkzeuge.get("height")/dbox.height);
-			console.log("mul",werkzeuge.get("width")/dbox.width);
-			console.log("mul",pxtommMul);
-			//if( werkzeuge.get("width")/dbox.width<pxtommMul )pxtommMul= werkzeuge.get("width")/dbox.width;
+			var mulScaleDraw=Math.min(canvasZeichnung.height/dbox.height, canvasZeichnung.width/dbox.width);
 			
-			//pxtommMul=pxtommMul*Math.min(dbox.height/werkzeuge.get("height"),dbox.width/werkzeuge.get("width"));
+			//console.log("mul?",blattheight/dbox.height,blattwidth/dbox.width);
+			//console.log("mul>",pxtommMul);
 			
-			//console.log("mul>",dbox.height/werkzeuge.get("height"));
-			//console.log("mul>",dbox.width/werkzeuge.get("width"));
-			
-			//console.log("mul",pxtommMul);
 			
 			//https://developer.mozilla.org/en-US/docs/Web/API/SVGGeometryElement/getPointAtLength
-			//if(pfadvalue.indexOf(' ')>-1)trennerzeichen=" ";
-			/*if(pfade.length>0){
-				pfad=pfade[0];
-				for( property in pfad ) {
-						console.log(property,typeof pfad[property]);
-				}
-			}	
-			*/
+			
 			var soz,pfade;
 			var strichobjekte=['path','line','rect'];//ansich gehen nur Pfade...
 			var xmin=dbox.height,xmax=0;
 			var ymin=dbox.width,ymax=0;
+			var tmp;
 			
-			for(soz=0;soz<strichobjekte.length;soz++){
-				pfade=svgdoc.getElementsByTagName(strichobjekte[soz]);
-				for(i=0;i<pfade.length;i++){
-					pfad=pfade[i];//.getAttribute('d')
-					pl=pfad.getTotalLength();
-					for(t=0;t<pl;t++){
-						svgpoint=pfad.getPointAtLength(t);
-						xmin=Math.min(svgpoint.x,xmin);
-						ymin=Math.min(svgpoint.y,ymin);
-						xmax=Math.max(svgpoint.y,xmax);
-						ymax=Math.max(svgpoint.y,ymax);
-					}
-					/*svgpoint=pfad.getPointAtLength(pl);
-					xmin=Math.min(svgpoint.x,xmin);
-					ymin=Math.min(svgpoint.y,ymin);
-					xmax=Math.max(svgpoint.y,xmax);
-					ymax=Math.max(svgpoint.y,ymax);*/
-				}
-			}
+			var calcfunnr=0;
+			var schleifenz=0;
 			
-			console.log(xmin,xmax,ymin,ymax);
-			pxtommMul=Math.min(werkzeuge.get("height")/(xmax-xmin), werkzeuge.get("width")/(ymax-ymin));
-			console.log(pxtommMul);
-			
-			for(soz=0;soz<strichobjekte.length;soz++){
-				pfade=svgdoc.getElementsByTagName(strichobjekte[soz]);
-				for(i=0;i<pfade.length;i++){
-					pfad=pfade[i];//.getAttribute('d')
-					pl=pfad.getTotalLength();
-					strichepunkte=[];
+			var clacpfade=function(){
+					if(calcytimer!=undefined)clearTimeout(calcytimer);
 					
-					for(t=0;t<pl;t++){
-						svgpoint=pfad.getPointAtLength(t);
-						strichepunkte.push({
-							x:(svgpoint.x-xmin)*pxtommMul,
-							y:(svgpoint.y-ymin)*pxtommMul, 
-							px:svgpoint.x-xmin,
-							py:svgpoint.y-ymin})
+					if(calcfunnr==0){
+							
+								pfade=svgdoc.getElementsByTagName('path');
+								
+								i=schleifenz;
+								//for(i=0;i<pfade.length;i++){
+									pfad=pfade[i];//.getAttribute('d')
+									pl=pfad.getTotalLength();
+									//console.log("pflength",pl);
+									for(t=0;t<pl;t++){
+										svgpoint=pfad.getPointAtLength(t);
+										xmin=Math.min(svgpoint.x,xmin);
+										ymin=Math.min(svgpoint.y,ymin);
+										xmax=Math.max(svgpoint.y,xmax);
+										ymax=Math.max(svgpoint.y,ymax);
+									}
+									setLadebalken(50/pfade.length*i);
+								//}
+								schleifenz++;
+								if(schleifenz==pfade.length){
+									calcfunnr=1;
+									schleifenz=0;
+								}
+							
 					}
-					svgpoint=pfad.getPointAtLength(pl-0.01);
-					strichepunkte.push({
-							x:(svgpoint.x-xmin)*pxtommMul,
-							y:(svgpoint.y-ymin)*pxtommMul, 
-							px:svgpoint.x-xmin,
-							py:svgpoint.y-ymin})
-					/**/
-					createLinie();
-				}
+					else
+					if(calcfunnr==1){
+						setLadebalken(50);
+						console.log(xmin,xmax,ymin,ymax);
+						//grafik auf Blattformat scalieren
+						tmp=Math.min(blattwidth/(xmax-xmin), blattheight/(ymax-ymin));
+						if(pxtommMul<tmp){
+							pxtommMul=tmp;
+							mulScaleDraw=Math.min(canvasZeichnung.height/(xmax-xmin), canvasZeichnung.width/(ymax-ymin));
+						}
+						
+						console.log("scaleto",pxtommMul,mulScaleDraw);//,tmp,blattwidth/(xmax-xmin),blattheight/(ymax-ymin),Programmeinstellungen);
+						schleifenz=0;
+						calcfunnr=2;	
+						
+					}
+					else
+					if(calcfunnr==2){
+						
+							pfade=svgdoc.getElementsByTagName('path');
+							//for(i=0;i<pfade.length;i++){
+							i=schleifenz;
+								pfad=pfade[i];//.getAttribute('d')
+								pl=pfad.getTotalLength();
+								strichepunkte=[];
+								setLadebalken(50+50/pfade.length*i);
+								
+								for(t=0;t<pl;t++){
+									svgpoint=pfad.getPointAtLength(t);
+									strichepunkte.push({
+										x:(svgpoint.x-xmin)*pxtommMul,//mm
+										y:(svgpoint.y-ymin)*pxtommMul, 
+										px:(svgpoint.x-xmin)*mulScaleDraw,//pixel			TODO->mulScaleDraw !!!
+										py:(svgpoint.y-ymin)*mulScaleDraw
+										})
+								}
+								svgpoint=pfad.getPointAtLength(pl-0.01);
+								strichepunkte.push({
+										x:(svgpoint.x-xmin)*pxtommMul,
+										y:(svgpoint.y-ymin)*pxtommMul, 
+										px:(svgpoint.x-xmin)*mulScaleDraw,
+										py:(svgpoint.y-ymin)*mulScaleDraw
+										})
+								
+								createLinie();//zeichnet px/py,optimiert auf x/y
+							//}
+							schleifenz++;
+							if(schleifenz==pfade.length){
+								calcfunnr=3;
+								schleifenz=0;
+							}
+					}
+					else
+					if(calcfunnr==3){
+						setLadebalken(100);
+						resizeZF();
+						setLadebalken(-1);
+						calcfunnr=4;
+					}
+					
+					if(calcfunnr<4){
+						calcytimer=setTimeout(clacpfade,1);
+					}
 			}
 			
-			
-			resizeZF();
-			//console.log(zeichnung);
-			
+			//start Liniengenerierung
+			clacpfade();
 		}
 		
 		
@@ -1488,6 +1546,10 @@ var electron_app=function(){
 			canvasZeichnung=cE(basisnode,"canvas","canZeichnung");
 			canvasZeichnung.style.left=rand+'px';
 			canvasZeichnung.style.top=rand+'px';
+			
+			ladebalken=cE(basisnode,"div","ladebalken");
+			ladebalkenf=cE(ladebalken,"div","lbfill");
+			setLadebalken(-1);
 			
 			canvasDraw=cE(basisnode,"canvas","canDraw");
 			canvasDraw.style.left=rand+'px';

@@ -59,8 +59,26 @@ body *{
 	cursor:crosshair;
 }
 
-
-
+#ladebalken,#lbfill
+{
+	position:absolute;
+	left:0;
+	top:0;
+	width:100%;
+	height:5px;
+	opacity:1;
+}
+#lbfill{
+	width:0%;
+	background-color:#75cc4a;
+}
+#ladebalken{
+	transition: opacity 0.25s linear 0s;
+	-webkit-transition: opacity 0.25s linear 0s;
+}
+#ladebalken.off{
+	opacity:0;
+}
 
 #werkzeuge{
 	background-color:#dddddd;
