@@ -29,7 +29,9 @@ var sprachen=[
 		 "dellaststroke":"letzten Strich löschen (strg+z)",
 		 "loadgcode":"Grafik laden",
 		 "exportgcode":"als gcode speichern",
-		 "notcorrectfile":"Diese Datei kann ich nicht lesen :-/"
+		 "notcorrectfile":"Diese Datei kann ich nicht lesen :-/",
+		 "notpfade":"Keine verwertbare Pfade enthalten :-/",
+		 "scaletoblatt":"Auf Fläche scalieren?"
 		}
 	},
 	{"language":"EN",
@@ -59,7 +61,9 @@ var sprachen=[
 		 "dellaststroke":"Delete the last stroke (strg+z)",
 		 "loadgcode":"load grafik",
 		 "exportgcode":"save gcode",
-		 "notcorrectfile":"I can not read this file :-/"
+		 "notcorrectfile":"I can not read this file :-/",
+		 "notpfade":"No usable paths :-/",
+		 "scaletoblatt":"Scale to paper?"
 	 }
 	}
 ];

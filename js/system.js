@@ -1394,6 +1394,12 @@ var electron_app=function(){
 			
 			var daten=fs.readFileSync(fileName, 'utf8');
 			
+			//Pfade aufsplitten
+			if(daten.indexOf(" M")>-1){
+				console.log("trenne Pfade");
+				daten=daten.split(" M").join("\"/><path fill=\"none\" stroke=\"#000000\" d=\"M");
+			}
+			
 			var svgdoc=document.createElement('svg');
 			svgdoc.innerHTML=daten;
 			
@@ -1408,6 +1414,17 @@ var electron_app=function(){
 			var sarr=info.getAttribute("viewBox").split(' ');
 			
 			var dbox={"x":sarr[0],"y":sarr[1],"width":sarr[2],"height":sarr[3]};
+			
+			if(!confirm(getWort("scaletoblatt"))){
+				//scalieren auf document oder 72dpi (mm=px/72dpi*25,4mm)
+				blattwidth=Math.floor(dbox.width/72*25.4);
+				blattheight=Math.floor(dbox.height/72*25.4);
+				werkzeuge.set("width",blattwidth);
+				werkzeuge.set("height",blattheight);
+				resizeZF();
+			}
+			
+			
 			var pxtommMul=Math.min(blattheight/dbox.height, blattwidth/dbox.width);
 			
 			var mulScaleDraw=Math.min(canvasZeichnung.height/dbox.height, canvasZeichnung.width/dbox.width);
@@ -1433,6 +1450,10 @@ var electron_app=function(){
 					if(calcfunnr==0){
 							
 								pfade=svgdoc.getElementsByTagName('path');
+								if(pfade.length==0){
+									alert(getWort("notpfade"));
+									return;
+								}
 								
 								i=schleifenz;
 								//for(i=0;i<pfade.length;i++){
