@@ -6,20 +6,20 @@ var sprachen=[
 	 "description":"deutsch",
 	 "words":{//"id":"wort in Sprache"
 		 "loading":"lade daten...",
-		 "Struchstaerke":"Strichstärke",
+		 "Strichstaerke":"Strichstärke",
+		 "Striche":"Striche",
 		 "Zeichenflaeche":"Zeichenfläche",
 		 "breite":"Breite",
 		 "hoehe":"Höhe",
-		 "anzlinien":"Strichanzahl",
 		 "loadvorlage":"Vorlage laden",
 		 "opacity":"Sichtbarkeit",
 		 "showdots":"Punkte zeigen",
 		 "showdraw":"Zeichnung zeichnen",
 		 "moveto":"verschieben nach",
-		 "moveleft":"Links",
-		 "moveright":"Rechts",
-		 "movetop":"Oben",
-		 "movedown":"Unten",
+		 "moveleft":"links",
+		 "moveright":"rechts",
+		 "movetop":"oben",
+		 "movedown":"unten",
 		 "scale":"Scalieren",
 		 "scalemore":"größer",
 		 "scaleless":"kleiner",
@@ -27,19 +27,20 @@ var sprachen=[
 		 "delvorlage":"Vorlage löschen",
 		 "clearZeichnung":"Zeichnung löschen",
 		 "dellaststroke":"letzten Strich löschen (strg+z)",
-		 "loadgcode":"gcode laden",
-		 "exportgcode":"als gcode speichern"
+		 "loadgcode":"Grafik laden",
+		 "exportgcode":"als gcode speichern",
+		 "notcorrectfile":"Diese Datei kann ich nicht lesen :-/"
 		}
 	},
 	{"language":"EN",
 	 "description":"english",
 	 "words":{
 		  "loading":"loading...",
-		 "Struchstaerke":"Line width",
+		 "Strichstaerke":"Line width",
+		 "Striche":"lines",
 		 "Zeichenflaeche":"Canvas size",
 		 "breite":"width",
 		 "hoehe":"height",
-		 "anzlinien":"Line count",
 		 "loadvorlage":"Load template",
 		 "opacity":"transparency",
 		 "showdots":"Show points",
@@ -56,8 +57,9 @@ var sprachen=[
 		 "delvorlage":"delete template",
 		 "clearZeichnung":"Delete the drawing",
 		 "dellaststroke":"Delete the last stroke (strg+z)",
-		 "loadgcode":"import gcode",
-		 "exportgcode":"save gcode"
+		 "loadgcode":"load grafik",
+		 "exportgcode":"save gcode",
+		 "notcorrectfile":"I can not read this file :-/"
 	 }
 	}
 ];

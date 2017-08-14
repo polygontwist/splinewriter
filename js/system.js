@@ -21,10 +21,10 @@ var electron_app=function(){
 			"servoUP":83,
 			"servoUPwriting":40,
 			"servoDown":0,
-			"servowaittime":300,//300ms warten, wenn up oder down
+			"servowaittime":0,//300ms warten, wenn up oder down
 			
-			"movespeed":1300,
-			"drawspeed":900,
+			"movespeed":3000,	//max F5000
+			"drawspeed":2000,	//max F5000
 			
 			"endcode":"M84 \n", //disable motors
 				
@@ -35,7 +35,10 @@ var electron_app=function(){
 			//Line-Optimirungen
 			"abweichung":6,			//°Winkel
 			"abstandmin":0.8,  		//mm
-			"grobabweichung":80,	//°Winkel			
+			"grobabweichung":80,	//°Winkel	
+			"weitemm":2.5,			//verschiebe um mm
+			
+			"blatt":{"width":100,"height":100}
 		},
 		dateiio:{
 			"lastdateiname":""
@@ -49,6 +52,9 @@ var electron_app=function(){
 		ProgrammOrdner:"SplineWriter",
 		DateinameOptionen:"optionen.json"
 	}
+	
+	var inpElementeList=[];//Werkzeug-InputElemente
+	
 	
 	var zielNode;
 	var app = require('electron').remote; 
@@ -146,8 +152,19 @@ var electron_app=function(){
 		
 	//--electron--
 	
+	var addprobs=function(ziel,props){
+		var property;
+		for( property in props ) {
+			if(typeof props[property] === "object"){
+				if(ziel[property]==undefined)ziel[property]={};
+				addprobs(ziel[property],props[property]);		//rekursiev, jede Eigenschaft an Objekt seperat anhängen
+			}
+			else
+				ziel[property]=props[property];
+		}
+	}
 	var getSettingsAtStart=function(){
-		var r,optionen,property,
+		var r,optionen,
 			win=remote.getCurrentWindow();
 			
 		if(fs.existsSync(appdata.pathData+appdata.DateinameOptionen)){
@@ -161,9 +178,7 @@ var electron_app=function(){
 				}
 				//setings
 				//gespeicherte Propertys anfügen/ersetzen
-				for( property in optionen ) {
-						Programmeinstellungen[property]=optionen[property];
-				}
+				addprobs(Programmeinstellungen,optionen);
 			}
 		}
 		else{
@@ -250,6 +265,7 @@ var electron_app=function(){
 		werkzeuge=new oWerkzeuge(zielNode);
 		
 		zeichenfeld.resize();
+		console.log("press STRG+D for developertools.");
 	}
 	
 	var oWerkzeuge=function(ziel){
@@ -257,12 +273,16 @@ var electron_app=function(){
 		var inpStaerke;
 		var inpWidth;
 		var inpHeight;
-		var inpAnzahlStriche;
+		//var inpAnzahlStriche;
 		var inpShowdots;
 		var inpShowdrawing;
 		
 		//--API--
 		this.get=function(sWert){
+			
+			Programmeinstellungen.drawoptions.blatt.width=parseInt(inpWidth.getVal());
+			Programmeinstellungen.drawoptions.blatt.height= parseInt(inpHeight.getVal());
+			
 			if(sWert=="width")	return parseInt(inpWidth.getVal());
 			if(sWert=="height")	return parseInt(inpHeight.getVal());
 			if(sWert=="linewidth")	return parseFloat(inpStaerke.getVal());
@@ -271,7 +291,6 @@ var electron_app=function(){
 			if(sWert=="showdraw")return inpShowdrawing.getVal();
 		}
 		this.set=function(id,wert){
-			if(id=="AnzahlStriche")inpAnzahlStriche.setVal(parseFloat(wert));
 			if(id=="width")	inpWidth.setVal(parseInt(wert));
 			if(id=="height")inpHeight.setVal(parseInt(wert));
 			saveSettings();
@@ -293,145 +312,153 @@ var electron_app=function(){
 			if(zeichenfeld)zeichenfeld.resize();
 			saveSettings();
 		}
-		
-		var clearDrawing=function(v){
-			if(zeichenfeld)zeichenfeld.clear();
-		}
-		
-		var buttmoveL=function(v){if(zeichenfeld)zeichenfeld.moveto("L");}
-		var buttmoveR=function(v){if(zeichenfeld)zeichenfeld.moveto("R");}
-		var buttmoveT=function(v){if(zeichenfeld)zeichenfeld.moveto("T");}
-		var buttmoveD=function(v){if(zeichenfeld)zeichenfeld.moveto("D");}
-		var buttscaleP=function(v){if(zeichenfeld)zeichenfeld.scale("+");}
-		var buttscaleM=function(v){if(zeichenfeld)zeichenfeld.scale("-");}
-		
-		var changeVPTrans=function(v){
-			if(zeichenfeld)zeichenfeld.setVorlageTransparenz(v);		
-		}
-		
-		var loadvorlage=function(v){
-			if(zeichenfeld)zeichenfeld.loadvorlage();
-		}
-		
-		var delvorlage=function(v){
-			if(zeichenfeld)zeichenfeld.delvorlage();
-		}
-		
-		var deletelastStrich=function(v){
-			if(zeichenfeld){
-				zeichenfeld.dellaststroke();
-				};
-		}
-		
-		var importgcode=function(v){
-			if(zeichenfeld){
-				zeichenfeld.importgcode();
-				};
-		}
-		
-		var exportgcode=function(v){
-			if(zeichenfeld){
-				zeichenfeld.exportgcode();
-				};
-		}
+				
 		
 		//--ini--		
 		var create=function(){
 			//
-			var div,inpbutt;
-			var node=cE(zielNode,"div","werkzeuge");
+			var div,inpbutt,gruppe,h1;
+			var werkznode=cE(zielNode,"div","werkzeuge");
 			
-			openclosebutt=cE(node,"a",undefined,"ocbutt");
+			//Werkzeuge ein/ausfahren
+			openclosebutt=cE(werkznode,"a",undefined,"ocbutt");
 			openclosebutt.innerHTML="";
 			openclosebutt.href="#";
 			openclosebutt.addEventListener('click',wopenclose);
 			
-			inpAnzahlStriche=new inputElement(getWort('anzlinien'),'text',node);
-			inpAnzahlStriche.inaktiv(true);
+		//TODO: neu anlegen! ->Gruppenweise (gruppen schließmech)
+		/*
+			(gruppenname +-)		
+			|optionen |
+			...
+		
+			<article>
+				<h1>gruppenname</h1>+klickevent
+				<div><label /><input /><span /><div> //Textdavor, input(text,number,range) textdanach
+				
+				<div><label /><input /><label htmlfor /><div> //Switchbutton (checkbox)
+				
+				<div><input /><div> //Button (button)
+				
+			</article>
+		
+		*/
 			
-			div=cE(node,"div",undefined,"linetop");
+			//Info
+			//inpAnzahlStriche=new inputElement(getWort('anzlinien'),'text',node);
+			//inpAnzahlStriche.inaktiv(true);
 			
-			inpbutt=new inputElement(getWort('loadvorlage'),'button',node);
-			inpbutt.addEvL("change",loadvorlage);
-			
-			inpbutt=new inputElement(getWort('delvorlage'),'button',node);
-			inpbutt.addEvL("change",delvorlage);
+			//div=cE(node,"div",undefined,"linetop");
 			
 			
-			div=cE(node,"div",undefined,"block");
+			gruppe=cE(werkznode,"article",undefined,"gruppe");
+			
+			//Helperlein
+			inpbutt=new inputElement(getWort('loadvorlage'),'button',gruppe);
+			inpbutt.addEventFunc( function(v){if(zeichenfeld)zeichenfeld.loadvorlage();} );
+			
+			inpbutt=new inputElement(getWort('delvorlage'),'button',gruppe);
+			inpbutt.addEventFunc( function(v){if(zeichenfeld)zeichenfeld.delvorlage();} );
+						
+			div=cE(gruppe,"div",undefined,"block");
 			inpbutt=new inputElement(getWort('opacity'),'range',div);
 			inpbutt.setMinMaxStp(0,1,0.05);
 			inpbutt.setVal(1);
-			inpbutt.addEvL("change",changeVPTrans);
+			inpbutt.addEventFunc( function(v){if(zeichenfeld)zeichenfeld.setVorlageTransparenz(v);} );
 			
 			
-			div=cE(node,"div",undefined,"linetop");
+			gruppe=cE(werkznode,"article",undefined,"gruppe");
+			//viewoptions
+			inpbutt=new inputElement(getWort('clearZeichnung'),'button',gruppe);
+			inpbutt.addEventFunc( function(v){if(zeichenfeld)zeichenfeld.clear();} );
 			
-			inpbutt=new inputElement(getWort('clearZeichnung'),'button',node);
-			inpbutt.addEvL("change",clearDrawing);
+			inpbutt=new inputElement(getWort('dellaststroke'),'button',gruppe);
+			inpbutt.addEventFunc( function(v){if(zeichenfeld)zeichenfeld.dellaststroke();} );
 			
-			inpbutt=new inputElement(getWort('dellaststroke'),'button',node);
-			inpbutt.addEvL("change",deletelastStrich);
+			inpShowdots=new inputElement(getWort('showdots'),'checkbox',gruppe);
+			inpShowdots.addEventFunc(changeElemente);
 			
-			div=cE(node,"div",undefined,"linetop");
-			
-			//Zeichnung: -> <- V /\
-			//show Punkte
-			inpShowdots=new inputElement(getWort('showdots'),'checkbox',node);
-			inpShowdots.addEvL("change",changeElemente);
-			
-			inpShowdrawing=new inputElement(getWort('showdraw'),'checkbox',node);
-			inpShowdrawing.addEvL("change",changeElemente);
-			
-			div=cE(node,"div",undefined,"block linetop");
-			div.innerHTML=getWort("moveto")+":";
-			inpbutt=new inputElement(getWort('moveleft'),'button',div);
-			inpbutt.addEvL("change",buttmoveL);
-			inpbutt=new inputElement(getWort('moveright'),'button',div);
-			inpbutt.addEvL("change",buttmoveR);
-			inpbutt=new inputElement(getWort('movetop'),'button',div);
-			inpbutt.addEvL("change",buttmoveT);
-			inpbutt=new inputElement(getWort('movedown'),'button',div);
-			inpbutt.addEvL("change",buttmoveD);
-			
-			inpbutt=new inputElement(getWort('scalemore'),'button',div);
-			inpbutt.addEvL("change",buttscaleP);
-			inpbutt=new inputElement(getWort('scaleless'),'button',div);
-			inpbutt.addEvL("change",buttscaleM);
+			inpShowdrawing=new inputElement(getWort('showdraw'),'checkbox',gruppe);
+			inpShowdrawing.addEventFunc(changeElemente);
 			
 			
 			
-			div=cE(node,"div",undefined,"linetop");
+			gruppe=cE(werkznode,"article",undefined,"gruppe");
+			//Zeichnung actions: 
+			h1=cE(gruppe,"h1");
+			h1.innerHTML=getWort("moveto")+":";
 			
-			inpStaerke=new inputElement(getWort('Struchstaerke'),'number',node,getWort('mm'));
+			
+			inpbutt=new inputElement(getWort('moveleft'),'button',gruppe);
+			inpbutt.addEventFunc( function(v){if(zeichenfeld)zeichenfeld.moveto("L");} );
+			inpbutt.setClass("minibutt moveL");
+			
+			inpbutt=new inputElement(getWort('moveright'),'button',gruppe);
+			inpbutt.addEventFunc( function(v){if(zeichenfeld)zeichenfeld.moveto("R");} );
+			inpbutt.setClass("minibutt moveR");
+			
+			inpbutt=new inputElement(getWort('movetop'),'button',gruppe);
+			inpbutt.addEventFunc( function(v){if(zeichenfeld)zeichenfeld.moveto("T");} );
+			inpbutt.setClass("minibutt moveT");
+			
+			inpbutt=new inputElement(getWort('movedown'),'button',gruppe);
+			inpbutt.addEventFunc( function(v){if(zeichenfeld)zeichenfeld.moveto("D");} );
+			inpbutt.setClass("minibutt moveD");
+			
+			
+			inpbutt=new inputElement(getWort('scaleless'),'button',gruppe);
+			inpbutt.addEventFunc( function(v){if(zeichenfeld)zeichenfeld.scale("-");} );
+			inpbutt.setClass("minibutt scaleM");
+			
+			inpbutt=new inputElement(getWort('scalemore'),'button',gruppe);
+			inpbutt.addEventFunc( function(v){if(zeichenfeld)zeichenfeld.scale("+");} );
+			inpbutt.setClass("minibutt scaleP");
+			
+			//TODO: rotate +-90°
+			
+			
+			
+			
+			gruppe=cE(werkznode,"article",undefined,"gruppe");
+			//Stift
+			inpStaerke=new inputElement(getWort('Strichstaerke'),'number',gruppe,getWort('mm'));
 			inpStaerke.setVal(0.5);
 			inpStaerke.setMinMaxStp(0.1,10,0.05);
-			inpStaerke.addEvL("change",changeElemente);
+			inpStaerke.addEventFunc(changeElemente);
 			
-			div=cE(node,"div",undefined,"block linetop");
-			div.innerHTML=getWort("Zeichenflaeche")+":";
 			
-			inpWidth=new inputElement(getWort('breite'),'number',div,getWort('mm'));
-			inpWidth.setVal(130);
+			
+			gruppe=cE(werkznode,"article",undefined,"gruppe");
+			//Blatt			
+			h1=cE(gruppe,"h1");
+			h1.innerHTML=getWort("Zeichenflaeche")+":";
+			
+			inpWidth=new inputElement(getWort('breite'),'number',gruppe,getWort('mm'));
+			inpWidth.setVal(Programmeinstellungen.drawoptions.blatt.width);
 			inpWidth.setMinMaxStp(0,500);
-			inpWidth.addEvL("change",changeElemente);
+			inpWidth.addEventFunc(changeElemente);
 			
-			inpHeight=new inputElement(getWort('hoehe'),'number',div,getWort('mm'));
-			inpHeight.setVal(80);
+			inpHeight=new inputElement(getWort('hoehe'),'number',gruppe,getWort('mm'));
+			inpHeight.setVal(Programmeinstellungen.drawoptions.blatt.height);
 			inpHeight.setMinMaxStp(0,500);
-			inpHeight.addEvL("change",changeElemente);
-			
-			div=cE(node,"div",undefined,"linetop");
-			
-			inpbutt=new inputElement(getWort('loadgcode'),'button',node);
-			inpbutt.addEvL("change",importgcode);
-			
-			inpbutt=new inputElement(getWort('exportgcode'),'button',node);
-			inpbutt.addEvL("change",exportgcode);
+			inpHeight.addEventFunc(changeElemente);
 			
 			
 			
+			
+			gruppe=cE(werkznode,"article",undefined,"gruppe");
+			//import/export
+			inpbutt=new inputElement(getWort('loadgcode'),'button',gruppe);
+			inpbutt.addEventFunc( function(v){if(zeichenfeld)zeichenfeld.importgcode();} );
+			
+			
+			inpbutt=new inputElement(getWort('exportgcode'),'button',gruppe);
+			inpbutt.addEventFunc( function(v){if(zeichenfeld)zeichenfeld.exportgcode();} );
+			//exportoptions
+			
+			//
 			addClass(zielNode,"werkzeugeoffen");
+			refreshInputElemente();
 		}
 		
 		create();
@@ -464,6 +491,7 @@ var electron_app=function(){
 		}
 		
 		//--API--
+		this.getLineCount=function(){return zeichnung.length;}
 		
 		this.resize=function(){
 			resizeZF();
@@ -556,7 +584,7 @@ var electron_app=function(){
 			daten+=Programmeinstellungen.gcodeoptions.servoport+" ";
 			daten+="S"+Programmeinstellungen.gcodeoptions.servoUP+"\n";
 			
-			daten+="G4 P"+Programmeinstellungen.gcodeoptions.servowaittime+"\n\n";//wait ms
+			if(Programmeinstellungen.gcodeoptions.servowaittime>0)daten+="G4 P"+Programmeinstellungen.gcodeoptions.servowaittime+"\n\n";//wait ms
 			
 			/* 
 			G1 X71.874 Y58.418 F1800.000
@@ -579,7 +607,7 @@ var electron_app=function(){
 						daten+="M280 ";// M280 P1 S50 
 						daten+=Programmeinstellungen.gcodeoptions.servoport+" ";
 						daten+="S"+Programmeinstellungen.gcodeoptions.servoDown+"\n";
-						daten+="G4 P"+Programmeinstellungen.gcodeoptions.servowaittime+"\n";
+						if(Programmeinstellungen.gcodeoptions.servowaittime>0)daten+="G4 P"+Programmeinstellungen.gcodeoptions.servowaittime+"\n";
 			
 					}
 					else
@@ -597,7 +625,7 @@ var electron_app=function(){
 					daten+="M280 ";// M280 P1 S50 
 					daten+=Programmeinstellungen.gcodeoptions.servoport+" ";
 					daten+="S"+Programmeinstellungen.gcodeoptions.servoUPwriting+"\n";
-					daten+="G4 P"+Programmeinstellungen.gcodeoptions.servowaittime+"\n\n";
+					if(Programmeinstellungen.gcodeoptions.servowaittime>0)daten+="G4 P"+Programmeinstellungen.gcodeoptions.servowaittime+"\n\n";
 				}
 			}
 						
@@ -606,14 +634,14 @@ var electron_app=function(){
 			daten+=Programmeinstellungen.gcodeoptions.servoport+" ";
 			daten+="S"+Math.floor(Programmeinstellungen.gcodeoptions.servoUP*0.85)+"\n";
 			
-			daten+="G4 P"+Programmeinstellungen.gcodeoptions.servowaittime+"\n\n";//wait
+			if(Programmeinstellungen.gcodeoptions.servowaittime>0)daten+="G4 P"+Programmeinstellungen.gcodeoptions.servowaittime+"\n\n";//wait
 			
 			daten+="; servo up"+"\n";// M280 P0 S83 
 			daten+="M280 ";
 			daten+=Programmeinstellungen.gcodeoptions.servoport+" ";
 			daten+="S"+Programmeinstellungen.gcodeoptions.servoUP+"\n";
 			
-			daten+="G4 P"+Programmeinstellungen.gcodeoptions.servowaittime+"\n\n";//wait
+			if(Programmeinstellungen.gcodeoptions.servowaittime>0)daten+="G4 P"+Programmeinstellungen.gcodeoptions.servowaittime+"\n\n";//wait
 			
 			daten+="G1 X0 Y0 F"+drawspeed;//move to 0,0
 			
@@ -631,7 +659,7 @@ var electron_app=function(){
 						defaultPath :appdata.userdokumente,//+"/"+daten.filename,
 						properties: ['openFile'],
 						filters: [
-							{name: 'gcode', extensions: ['gcode']},
+							{name: 'gcode,svg', extensions: ['gcode','svg']},
 							{name: 'All Files', extensions: ['*']}
 						  ]
 					},
@@ -639,9 +667,16 @@ var electron_app=function(){
 						   if (filesNames === undefined){
 						   }
 						   else{
-							  console.log(filesNames);// An array
-							  if(filesNames.length>0)
-								loadGCode(filesNames[0]);
+							 // console.log(filesNames);// An array
+							  if(filesNames[0].length>4){
+									if(filesNames[0].indexOf('.gcode')>-1)
+										loadGCode(filesNames[0]);
+									else
+									if(filesNames[0].indexOf('.svg')>-1)
+										loadSVG(filesNames[0]);
+									else
+										alert(getWort('notcorrectfile'));
+								}
 						   }
 					}
 				); 			
@@ -651,7 +686,7 @@ var electron_app=function(){
 			var i,line,pz,p;
 			var stepx=0;
 			var stepy=0;
-			var weitemm=5;//mm
+			var weitemm=Programmeinstellungen.drawoptions.weitemm;//mm
 			if(sRichtung=="L")stepx=-1;
 			if(sRichtung=="R")stepx=1;
 			if(sRichtung=="T")stepy=-1;
@@ -693,8 +728,14 @@ var electron_app=function(){
 			canvasVorlage.style.opacity=v;
 		}
 		
+		this.hatVorlage=function(){
+			return canvasVorlage.hatVorlage;
+		}
+		
+		
 		//--func--
 		//--maus/Tastatur--		
+		//bei wacom leider anfangsphase ~ 5-8px als strich...
 		var mausmove=function(e){
 			var xy=relMouse(e,canvasDraw);
 		
@@ -705,11 +746,12 @@ var electron_app=function(){
 			var y=b/cb*xy.y;
 			mausXY={x:x,y:y ,px:xy.x,py:xy.y};
 			
-			document.title=apptitel+" ("+Math.floor(x*100)/100+"mm,"
-							+Math.floor(y*100)/100+"mm) "
-							/*+mausstat.isdown+' '
-							+strichepunkte.length*/
-							;
+			var s=apptitel+" ("+Math.floor(x*100)/100+"mm,"
+							+Math.floor(y*100)/100+"mm) ";
+			if(zeichnung.length>0)s+=""+zeichnung.length+" "+getWort("Striche");
+			//if(mausstat.isdown)s+=" *";
+			document.title=s;
+							
 			
 			if(mausstat.isdown){
 				//zeichnen
@@ -823,6 +865,8 @@ var electron_app=function(){
 				showHGMuster();
 				showZeichnung();
 			}			
+		
+			refreshInputElemente();
 		}
 		
 		
@@ -1018,7 +1062,7 @@ var electron_app=function(){
 			}
 			
 			zeichnung.push(zline);
-			werkzeuge.set("AnzahlStriche",zeichnung.length);
+			refreshInputElemente();
 		}
 		
 		var timer=undefined;
@@ -1091,6 +1135,8 @@ var electron_app=function(){
 		var loadVorlagenbild=function(fileName){
 			fileName=fileName.split("\\").join("/");
 			canvasVorlage.style.backgroundImage="url("+fileName+")";
+			canvasVorlage.hatVorlage=fileName!="";
+			refreshInputElemente();
 		}
 		
 		
@@ -1310,12 +1356,116 @@ var electron_app=function(){
 				werkzeuge.set("height",Math.round(maxY+0.5));
 			}//mm
 			
-			console.log(minX,maxX,minY,maxY);
-			
 			resizeZF();
 			showZeichnung();
 			
 		}
+		
+		var loadSVG=function(fileName){
+			zeichnung=[];//löschen
+			
+			//var DOMURL = window.URL || window.webkitURL || window;
+			var i,t,pfad,pl,property,svgpoint,drawline;
+			Programmeinstellungen.dateiio.lastdateiname=fileName.split('.svg').join('.gcode');
+			
+			var daten=fs.readFileSync(fileName, 'utf8');
+			//var svg = new Blob([daten], {type: 'image/svg+xml'});
+			//var url = DOMURL.createObjectURL(svg);
+			
+			var svgdoc=document.createElement('svg');
+			//svgdoc.setAttribute("type","image/svg+xml");
+			svgdoc.innerHTML=daten;
+			
+			var info=svgdoc.getElementsByTagName('svg')[0];
+			console.log(info.getAttribute("version"));
+			console.log(info.getAttribute("viewBox"));//0 0 800 600
+			
+			var sarr=info.getAttribute("viewBox").split(' ');
+			var dbox={"x":sarr[0],"y":sarr[1],"width":sarr[2],"height":sarr[3]};
+			var pxtommMul=Math.min(werkzeuge.get("height")/dbox.height, werkzeuge.get("width")/dbox.width);
+			
+			console.log("mul",werkzeuge.get("height")/dbox.height);
+			console.log("mul",werkzeuge.get("width")/dbox.width);
+			console.log("mul",pxtommMul);
+			//if( werkzeuge.get("width")/dbox.width<pxtommMul )pxtommMul= werkzeuge.get("width")/dbox.width;
+			
+			//pxtommMul=pxtommMul*Math.min(dbox.height/werkzeuge.get("height"),dbox.width/werkzeuge.get("width"));
+			
+			//console.log("mul>",dbox.height/werkzeuge.get("height"));
+			//console.log("mul>",dbox.width/werkzeuge.get("width"));
+			
+			//console.log("mul",pxtommMul);
+			
+			//https://developer.mozilla.org/en-US/docs/Web/API/SVGGeometryElement/getPointAtLength
+			//if(pfadvalue.indexOf(' ')>-1)trennerzeichen=" ";
+			/*if(pfade.length>0){
+				pfad=pfade[0];
+				for( property in pfad ) {
+						console.log(property,typeof pfad[property]);
+				}
+			}	
+			*/
+			var soz,pfade;
+			var strichobjekte=['path','line','rect'];//ansich gehen nur Pfade...
+			var xmin=dbox.height,xmax=0;
+			var ymin=dbox.width,ymax=0;
+			
+			for(soz=0;soz<strichobjekte.length;soz++){
+				pfade=svgdoc.getElementsByTagName(strichobjekte[soz]);
+				for(i=0;i<pfade.length;i++){
+					pfad=pfade[i];//.getAttribute('d')
+					pl=pfad.getTotalLength();
+					for(t=0;t<pl;t++){
+						svgpoint=pfad.getPointAtLength(t);
+						xmin=Math.min(svgpoint.x,xmin);
+						ymin=Math.min(svgpoint.y,ymin);
+						xmax=Math.max(svgpoint.y,xmax);
+						ymax=Math.max(svgpoint.y,ymax);
+					}
+					/*svgpoint=pfad.getPointAtLength(pl);
+					xmin=Math.min(svgpoint.x,xmin);
+					ymin=Math.min(svgpoint.y,ymin);
+					xmax=Math.max(svgpoint.y,xmax);
+					ymax=Math.max(svgpoint.y,ymax);*/
+				}
+			}
+			
+			console.log(xmin,xmax,ymin,ymax);
+			pxtommMul=Math.min(werkzeuge.get("height")/(xmax-xmin), werkzeuge.get("width")/(ymax-ymin));
+			console.log(pxtommMul);
+			
+			for(soz=0;soz<strichobjekte.length;soz++){
+				pfade=svgdoc.getElementsByTagName(strichobjekte[soz]);
+				for(i=0;i<pfade.length;i++){
+					pfad=pfade[i];//.getAttribute('d')
+					pl=pfad.getTotalLength();
+					strichepunkte=[];
+					
+					for(t=0;t<pl;t++){
+						svgpoint=pfad.getPointAtLength(t);
+						strichepunkte.push({
+							x:(svgpoint.x-xmin)*pxtommMul,
+							y:(svgpoint.y-ymin)*pxtommMul, 
+							px:svgpoint.x-xmin,
+							py:svgpoint.y-ymin})
+					}
+					svgpoint=pfad.getPointAtLength(pl-0.01);
+					strichepunkte.push({
+							x:(svgpoint.x-xmin)*pxtommMul,
+							y:(svgpoint.y-ymin)*pxtommMul, 
+							px:svgpoint.x-xmin,
+							py:svgpoint.y-ymin})
+					/**/
+					createLinie();
+				}
+			}
+			
+			
+			resizeZF();
+			//console.log(zeichnung);
+			
+		}
+		
 		
 		//--ini--
 		var create=function(){			
@@ -1359,14 +1509,46 @@ var electron_app=function(){
 		create();
 	}
 	
-	var inpElementeNr=0;
+	var refreshInputElemente=function(){
+		var i,inp;
+		for(i=0;i<inpElementeList.length;i++){
+			inp=inpElementeList[i];
+			if(	inp.getName()==getWort('dellaststroke')
+				||
+				inp.getName()==getWort('clearZeichnung')
+				||
+				inp.getName()==getWort('moveleft')
+				||
+				inp.getName()==getWort('moveright')
+				||
+				inp.getName()==getWort('movetop')
+				||
+				inp.getName()==getWort('movedown')
+				||
+				inp.getName()==getWort('scalemore')
+				||
+				inp.getName()==getWort('scaleless')
+				||
+				inp.getName()==getWort('exportgcode')
+			){
+				inp.inaktiv(zeichenfeld.getLineCount()==0);
+			}
+			if(	inp.getName()==getWort('delvorlage')){
+				inp.inaktiv(!zeichenfeld.hatVorlage())
+			}
+			
+		}
+	}
+	
 	var inputElement=function(caption,typ,ziel,sEinheit){
+		var _this=this;
 		var input;
 		var blockdiv;
 		var vmin=undefined;
 		var vmax=undefined;
 		var sendetimer=undefined;
 		var valsendenin=1000;//ms
+		var basiselement=undefined;
 		
 		var fchange=undefined;
 		
@@ -1384,6 +1566,8 @@ var electron_app=function(){
 			input.disabled =b;
 		}
 		
+		this.getName=function(){return caption;}
+		
 		this.setVal=function(val){
 			if(input.type=="checkbox")
 				input.checked=val;
@@ -1399,13 +1583,12 @@ var electron_app=function(){
 		}
 		
 		this.setClass=function(c){
-			addClass(blockdiv,c);
+			basiselement.className=c;
+			//addClass(blockdiv,c);
 		}
 		
-		this.addEvL=function(sEvent,func){
-			if(sEvent=="change"){
-				fchange=func;
-			}
+		this.addEventFunc=function(func){
+			fchange=func;
 		}
 		
 		
@@ -1424,9 +1607,19 @@ var electron_app=function(){
 		
 		//--ini--
 		var create=function(){
-			blockdiv=cE(ziel,"div",undefined,"block");			
-			var label,span;
+			var label,span,inpElementeNr=inpElementeList.length;
 			var iid='input_'+typ+'_'+inpElementeNr;
+			
+						
+			
+			if(sEinheit!=undefined || typ!="button"){
+				blockdiv=cE(ziel,"div");
+				basiselement=blockdiv;
+				}
+			else{
+				blockdiv=ziel;
+				}
+			
 			
 			if(typ!="button"){
 				label=cE(blockdiv,"label");
@@ -1435,15 +1628,16 @@ var electron_app=function(){
 			}			
 			
 			input=cE(blockdiv,"input",iid);
-			if(typ!="button"  ){
-					//label.htmlFor=iid;
-				}
-			else
+			if(typ=="button"  ){
 				input.value=caption;
+				
+			}
+			if(basiselement==undefined)basiselement=input;
+				
 			
 			input.type=typ;
 			if(typ=="button"){
-				addClass(input,"button");
+				//addClass(input,"button");
 				input.addEventListener('click',inpchange);
 				valsendenin=1;
 			}else{
@@ -1462,11 +1656,11 @@ var electron_app=function(){
 			}
 			
 			if(sEinheit!=undefined){
-				span=cE(blockdiv,"span");
+				span=cE(blockdiv,"span",undefined,"einheit");
 				span.innerHTML=sEinheit;				
 			}
 			
-			inpElementeNr++;
+			inpElementeList.push(_this);
 		}
 		
 		create();
