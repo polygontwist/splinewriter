@@ -11,6 +11,7 @@ Es können, neben gcode, auch SVG-Gafiken geladen werden. In den SVG-Grafiken m�
 Für die Ausführung ist ein Gerät mit Marlin-Firmeware von nöten, das ein Servo für den Stifthalter benutzt.
 Ich werde "Marlin 1.1.0-RC6" auf einem Rumba-Board nutzen.
 
+![Beispiel](https://github.com/polygontwist/splinewriter/blob/master/exampel/tiger.jpg)
 
 # Projekt bearbeiten
 
