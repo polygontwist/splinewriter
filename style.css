@@ -138,16 +138,36 @@ input[type="text"]:disabled{
 #werkzeuge article{
 	border-top:1px solid #eaeaea;
 	margin-left: 10px;	/*openclose !*/
-    margin-bottom: 5px;
+   /* margin-bottom: 5px;*/
     padding: 10px
 }
-
+#werkzeuge article div{
+	margin-bottom:2px;
+}
 #werkzeuge h1{
 	font-size:12pt;
 	margin:0;
 	font-weight:normal;
+	top: -10px;
+    position: relative;
+    background-color: #eaeaea;
+    text-align: center;
 }
-
+#werkzeuge h1:before,#werkzeuge h1:after{
+	content:"";
+	position:absolute;
+	top:0;
+	width:10px;
+	height:24px;
+	background-color: #eaeaea;
+	display:block;
+}
+#werkzeuge h1:before{
+	left:-10px;
+}
+#werkzeuge h1:after{
+	right:-10px;
+}
 
 #werkzeuge input[type="button"]{
 	width:100%;
@@ -166,9 +186,9 @@ input[type="text"]:disabled{
 
 #werkzeuge label.labeltext{
 	margin-right:2px;
-	min-width: 67px;
-	 display: inline-block;
-	}
+	min-width: 107px;
+	display: inline-block;
+}
 
 #werkzeuge .einheit{
 	margin-left:2px;

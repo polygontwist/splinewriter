@@ -28,7 +28,16 @@ var sprachen=[
 		 "clearZeichnung":"Zeichnung löschen",
 		 "dellaststroke":"letzten Strich löschen (strg+z)",
 		 "loadgcode":"Grafik laden",
-		 "exportgcode":"als gcode speichern",
+		 
+		 "speichern":"Speicheroptionen",
+		 "exportgcode":"speichern",
+		 "servoUP":"Servopos UP",
+		 "servoUPwriting":"Servopos UP writing",
+		 "servoDown":"Servopos Down",
+		 "servowaittime":"Servo Waittime",
+		 "movespeed":"movespeed",
+		 "drawspeed":"drawspeed",
+		 
 		 "notcorrectfile":"Diese Datei kann ich nicht lesen :-/",
 		 "notpfade":"Keine verwertbare Pfade enthalten :-/",
 		 "scaletoblatt":"Auf Fläche scalieren?"
@@ -60,8 +69,17 @@ var sprachen=[
 		 "clearZeichnung":"Delete the drawing",
 		 "dellaststroke":"Delete the last stroke (strg+z)",
 		 "loadgcode":"load grafik",
-		 "exportgcode":"save gcode",
-		 "notcorrectfile":"I can not read this file :-/",
+		 
+		 "speichern":"saving options",
+		 "exportgcode":"save",
+		 "servoUP":"Servopos UP",
+		 "servoUPwriting":"Servopos UP writing",
+		 "servoDown":"Servopos Down",
+		 "servowaittime":"Servo Waittime",
+		 "movespeed":"movespeed",
+		 "drawspeed":"drawspeed",
+		
+		"notcorrectfile":"I can not read this file :-/",
 		 "notpfade":"No usable paths :-/",
 		 "scaletoblatt":"Scale to paper?"
 	 }
