@@ -32,7 +32,7 @@ var electron_app=function(){
 			"spiegelX":true			
 		},
 		drawoptions:{
-			//Line-Optimirungen
+			//Line-Optimierungen
 			"abweichung":6,			//°Winkel
 			"abstandmin":0.8,  		//mm
 			"grobabweichung":80,	//°Winkel	
@@ -111,7 +111,7 @@ var electron_app=function(){
 	}
 	var getClasses=function(htmlNode){return htmlNode.className;}
 	
-	var streckenlaenge2D=function(p1,p2) {//[x,y][x,y]
+	var streckenlaenge2D=function(p1,p2) {//[x,y][x,y] c²=a²+b²
 		return Math.sqrt( Math.pow(p2[1]-p1[1],2)+Math.pow(p2[0]-p1[0],2));
 	} 
 	var getWinkel=function(p0,p1,p2 ,rkorr){//[x,y][x,y][x,y]
@@ -120,17 +120,19 @@ var electron_app=function(){
 		var a=streckenlaenge2D(p1,p2);
 		var b=streckenlaenge2D(p0,p2);
 		var c=streckenlaenge2D(p0,p1);	
+		
 		if(a>0 && b>0 && c>0)
 			re=Math.acos((a*a+c*c-b*b)/(2*a*c))* 180/Math.PI;
- 
-		if(rkorr)if(p1[0]<p2[0])re=re*-1;
+//console.log(Math.floor(re*100)/100);		
+		//p1.x links von p2.x?
  
 		 if(isNaN(re)){
-			 //console.log(">",a,b,c);
-			 re=0;
+			 //console.log(">>",a,b,c,p0,p1,p2);
+			 re=180;//drei Punkte auf einer Geraden
 		 }
+		if(rkorr)if(p1[0]<p2[0])re=re*-1;
  
-		return re;
+		return Math.floor(re*100)/100;
 	}
 	
 	function getMouseP(e){
@@ -798,35 +800,51 @@ var electron_app=function(){
 		
 		//--maus/Tastatur--		
 		//bei wacom leider anfangsphase ~ 5-8px als strich...
+		var laststiftsize=1;
 		var mausmove=function(e){
 			var xy=relMouse(e,canvasDraw);
 		
 			var b=werkzeuge.get("width");//mm
 			var cb=canvasHG.width;
 			
-			var x=b/cb*xy.x;
-			var y=b/cb*xy.y;
+			// /2->weniger jitter?
+			//var x=b/cb*Math.floor(xy.x/1)*1;//px->mm
+			//var y=b/cb*Math.floor(xy.y/1)*1;
+			
+			var x=Math.floor((b/cb*xy.x)*100)/100//px->mm  Genauigkeit: zwei Stellen hintern Komma
+			var y=Math.floor((b/cb*xy.y)*100)/100;
+			
+			
 			mausXY={x:x,y:y ,px:xy.x,py:xy.y};
 			
-			var s=apptitel+" ("+Math.floor(x*100)/100+"mm,"
+			var s=apptitel+" ("+Math.floor(x*100)/100+"mm,"		// /100-> 0.01mm
 							+Math.floor(y*100)/100+"mm) ";
 			if(zeichnung.length>0)s+=""+zeichnung.length+" "+getWort("Striche");
 			//if(mausstat.isdown)s+=" *";
 			document.title=s;
-							
+			var lw=laststiftsize;
 			
 			if(mausstat.isdown){
 				//zeichnen
+				
 				var cc=canvasDraw.getContext('2d');
 				cc.strokeStyle=farbeStift;
 				if(mausstat.isstart){
-					setStiftsizetopixel(cc);
+					lw=setStiftsizetopixel(cc);
+					laststiftsize=lw;
 					mausstat.isstart=false;
 				}
 				cc.beginPath();
 				cc.moveTo(mausstat.lastpos.px, mausstat.lastpos.py);
 				cc.lineTo(mausXY.px, mausXY.py);
 				cc.stroke();
+				
+				//point
+				if(werkzeuge.get("showdots")){
+					var siz=lw*1;
+					cc.fillStyle=farbepunkte;
+					cc.fillRect(mausXY.px+0.5-siz*0.5,mausXY.py+0.5-siz*0.5,siz,siz);
+				}
 				
 				if(strichepunkte.length==0)
 					strichepunkte.push(mausstat.lastpos);
@@ -974,6 +992,7 @@ var electron_app=function(){
 			cc.lineWidth=stepp*stiftsize;
 			cc.lineCap="round";
 			cc.lineJoin="round";
+			return stepp*stiftsize;
 		}
 	
 		var vektorwinkel=function(p1,p2){
@@ -1001,38 +1020,79 @@ var electron_app=function(){
 		}
 		
 		var Strichoptimieren=function(punkteliste){//auf x/y optimieren (übernahme wenn x/y passig)
-			var i,p,pl,re=[],tmp=[],tmp2=[],abst,v,lastv,pwl,winkel,p2;	
+			var i,p,pl,re=[],tmp=[],tmp2=[],abst,v,vDiffabs,lastv,pwl,winkel,p2;	
 			
 			if(punkteliste.length<2)return punkteliste;
 			
 			var abweichung=Programmeinstellungen.drawoptions.abweichung;//°Winkel
-			var abstandmin=Programmeinstellungen.drawoptions.abstandmin;  //cm ?
+			var abstandmin=Programmeinstellungen.drawoptions.abstandmin;  //mm px?
 			var grobabweichung=Programmeinstellungen.drawoptions.grobabweichung;
 						
 			//mindestabstand + winkel
+			/**/
 			tmp.push(punkteliste[0]);//ersten
 			pl=punkteliste[0];
 			lastv=0;
 			for(i=1;i<punkteliste.length-1;i++){
 				p=punkteliste[i];
-				abst=streckenlaenge2D([pl.x,pl.y],[p.x,p.y]);//cm				
+				abst=streckenlaenge2D([pl.x,pl.y],[p.x,p.y]);//mm			
 				
-				pwl=punkteliste[i-1];
-				p2=punkteliste[i+1];
+				pwl=punkteliste[i-1];//Punkt davor
+				//Punkte Winkel
+				p2=punkteliste[i+1]; //Punkt danach
 				v=getWinkel([pl.x,pl.y],[p.x,p.y],[p2.x,p2.y],true);
+				vDiffabs=Math.abs(v-lastv);
+				//console.log(abst,v,Math.abs(v-lastv));
 				
-				if(	abst>abstandmin &&   Math.abs(v-lastv)!=90
-					/*(abst<=abstandmin && Math.abs(v-lastv)>grobabweichung &&  Math.abs(v-lastv)!=90) 
-					*/
-					){ //console.log(abst,'+',Math.abs(v));
+				
+				if(	(abst>abstandmin && vDiffabs>0.1) ||  
+					(vDiffabs>80 && vDiffabs<300)	
+					){ 
+					
+					//<300 wegen +-180Flip			
+					
 					tmp.push(p);
 					pl=punkteliste[i];
-					lastv=v;
+					
+					/*if((vDiffabs>80 && vDiffabs<300))
+					console.log(v,	Math.floor(	(v-lastv)*100)/100,	
+								Math.floor(	vDiffabs*100)/100,"+W");
+					else					
+					console.log(v,	Math.floor(	(v-lastv)*100)/100,	
+								Math.floor(vDiffabs*100)/100,"+L");
+					*/			
+								
+								
+								
 				}else{
-					//console.log('-',Math.abs(v));
+					/*console.log(v,	Math.floor(	(v-lastv)*100)/100,
+								Math.floor(	Math.abs(v-lastv)*100)/100);
+					*/
 				}
+				lastv=v;
 			}
 			tmp.push(punkteliste[punkteliste.length-1]);//letzten
+			
+		//tmp=	punkteliste;
+			//jitter entfernen (1x1 Pixelversatz)
+			//var b=werkzeuge.get("width");//mm
+			//var cb=canvasHG.width;
+			
+			/*tmp=[];
+			for(i=0;i<punkteliste.length-1;i++){
+				p=punkteliste[i];
+				p.px=Math.floor(p.px/2)*2;//px
+				p.py=Math.floor(p.py/2)*2;
+				
+				//p.x=b/cb*p.x;//mm
+				//p.y=b/cb*p.y;
+				
+				
+				
+				tmp.push(p);
+			}*/
+			
+			//tmp=punkteliste;
 			/*re=tmp;*/
 			/*
 			//mindestabstand
@@ -1052,8 +1112,8 @@ var electron_app=function(){
 			*/
 	//tmp=punkteliste;
 			
-			//Vektorwinkel	
-			re.push(tmp[0]);//den ersten mitnehmen
+			//Vektorwinkel	- gringt leider mehr Fehler als Nutzen
+			/*re.push(tmp[0]);//den ersten mitnehmen
 			lastv=0;
 			for(i=1;i<tmp.length-1;i++){
 				pl=tmp[i-1];
@@ -1070,8 +1130,10 @@ var electron_app=function(){
 				
 			}
 			re.push(tmp[tmp.length-1]);//den letzten mitnehmen
-			/**/
+			*/
+			re=tmp;
 			
+			//Länge ermitteln
 			abst=0;
 			for(i=1;i<re.length;i++){
 				pl=re[i-1];
@@ -1079,7 +1141,9 @@ var electron_app=function(){
 				abst+=streckenlaenge2D([pl.x,pl.y],[p.x,p.y]);
 			}
 			//console.log(re[0]);
-			console.log("Optimiert von",punkteliste.length,tmp.length,"zu",re.length,"Länge:",abst);
+			console.log("Optimiert von",punkteliste.length,
+						'>',tmp.length,
+						"zu",re.length,"Länge:",abst);
 			
 			//if(abst==0)re=[]; //aktivieren, wenn man keine Punkte mag
 				
@@ -1213,7 +1277,7 @@ var electron_app=function(){
 		var savedaten=function(daten){
 				var dn=Programmeinstellungen.dateiio.lastdateiname;
 				if(dn=="")dn=appdata.userdokumente;
-			console.log(dn,">",Programmeinstellungen.dateiio.lastdateiname);
+			//console.log(dn,">",Programmeinstellungen.dateiio.lastdateiname);
 					dialog.showSaveDialog(
 						{
 							defaultPath :dn,//+"/"+daten.filename,
@@ -1239,7 +1303,6 @@ var electron_app=function(){
 							   }
 						}
 					); 
-			/**/			
 		}
 		
 		var calcytimer;
