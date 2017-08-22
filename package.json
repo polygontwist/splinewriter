@@ -11,7 +11,8 @@
     "dist": "build"
   },
   "keywords": [
-    "Spline","Writer"
+    "Spline",
+    "Writer"
   ],
   "homepage": "http://www.a-d-k.de",
   "devDependencies": {
@@ -26,6 +27,5 @@
       "icon": "build/icon.ico"
     }
   },
-  "dependencies": {
-  }
+  "dependencies": {}
 }

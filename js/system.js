@@ -471,17 +471,17 @@ var electron_app=function(){
 			h1.innerHTML=getWort("speichern")+":";
 			
 			
-			inpbutt=new inputElement(getWort('servoUP'),'number',gruppe,'°');
+			inpbutt=new inputElement(getWort('servoUP'),'number',gruppe);//,'°'
 			inpbutt.setVal(Programmeinstellungen.gcodeoptions.servoUP);
 			inpbutt.setMinMaxStp(0,255);
 			inpbutt.addEventFunc(changeExportOptionen);
 			
-			inpbutt=new inputElement(getWort('servoUPwriting'),'number',gruppe,'°');
+			inpbutt=new inputElement(getWort('servoUPwriting'),'number',gruppe);//,'°'
 			inpbutt.setVal(Programmeinstellungen.gcodeoptions.servoUPwriting);
 			inpbutt.setMinMaxStp(0,255);
 			inpbutt.addEventFunc(changeExportOptionen);
 			
-			inpbutt=new inputElement(getWort('servoDown'),'number',gruppe,'°');
+			inpbutt=new inputElement(getWort('servoDown'),'number',gruppe);//,'°'
 			inpbutt.setVal(Programmeinstellungen.gcodeoptions.servoDown);
 			inpbutt.setMinMaxStp(0,255);
 			inpbutt.addEventFunc(changeExportOptionen);
