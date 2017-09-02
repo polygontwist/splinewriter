@@ -29,7 +29,8 @@ var electron_app=function(){
 			"endcode":"M84 \n", //disable motors
 				
 			"spiegelY":false,
-			"spiegelX":true			
+			"spiegelX":true,			
+			"endmoveYmax":true			
 		},
 		drawoptions:{
 			//Line-Optimierungen
@@ -317,7 +318,7 @@ var electron_app=function(){
 			
 		var changeExportOptionen=function(v){
 			var i,ipe;
-			console.log(v,inpElementeList);
+			//console.log(v,inpElementeList);
 			for(i=0;i<inpElementeList.length;i++){
 				ipe=inpElementeList[i];
 				
@@ -327,6 +328,7 @@ var electron_app=function(){
 				if(ipe.getName()==getWort('servowaittime')){Programmeinstellungen.gcodeoptions.servowaittime=parseInt(ipe.getVal());}
 				if(ipe.getName()==getWort('movespeed')){Programmeinstellungen.gcodeoptions.movespeed=parseInt(ipe.getVal());}
 				if(ipe.getName()==getWort('drawspeed')){Programmeinstellungen.gcodeoptions.drawspeed=parseInt(ipe.getVal());}
+				if(ipe.getName()==getWort('endmoveYmax')){Programmeinstellungen.gcodeoptions.endmoveYmax=ipe.getVal();}
 				//save Programmeinstellungen
 				saveSettings();
 			}
@@ -502,6 +504,11 @@ var electron_app=function(){
 			inpbutt.addEventFunc(changeExportOptionen);
 			
 			
+			inpbutt=new inputElement(getWort('endmoveYmax'),'checkbox',gruppe);
+			inpbutt.setVal(Programmeinstellungen.gcodeoptions.endmoveYmax);
+			inpbutt.addEventFunc(changeExportOptionen);
+			
+			
 			
 			inpbutt=new inputElement(getWort('exportgcode'),'button',gruppe);
 			inpbutt.addEventFunc( function(v){if(zeichenfeld)zeichenfeld.exportgcode();} );
@@ -600,10 +607,13 @@ var electron_app=function(){
 			
 			var movespeed=Programmeinstellungen.gcodeoptions.movespeed;
 			var drawspeed=Programmeinstellungen.gcodeoptions.drawspeed;
+			var endmoveYmax=Programmeinstellungen.gcodeoptions.endmoveYmax;
 			var yMul=1;
 			var xMul=1;
 			var yVersatz=0;//mm
 			var xVersatz=0;//mm
+			var maxXX=0;
+			var maxYY=0;
 			
 			var maxX=0;//mm
 			var maxY=0;//mm
@@ -649,6 +659,9 @@ var electron_app=function(){
 					
 					xx=rundeauf(p.x*xMul+xVersatz,3);
 					yy=rundeauf(p.y*yMul+yVersatz,3);
+					if(xx>maxXX)maxXX=xx;
+					if(yy>maxYY)maxYY=yy;
+					
 					
 					if(pz==0){
 						//moveTo
@@ -695,7 +708,11 @@ var electron_app=function(){
 			
 			if(Programmeinstellungen.gcodeoptions.servowaittime>0)daten+="G4 P"+Programmeinstellungen.gcodeoptions.servowaittime+"\n\n";//wait
 			
-			daten+="G1 X0 Y0 F"+drawspeed;//move to 0,0
+			
+			if(endmoveYmax)
+				daten+="G1 X0 Y"+maxYY+" F"+movespeed;//move to 0,0
+				else
+				daten+="G1 X0 Y0 F"+movespeed;//move to 0,0
 			
 			daten+="\n";
 			daten+=Programmeinstellungen.gcodeoptions.endcode;
