@@ -493,12 +493,12 @@ var electron_app=function(){
 			inpbutt.setMinMaxStp(0,1000);
 			inpbutt.addEventFunc(changeExportOptionen);
 			
-			inpbutt=new inputElement(getWort('movespeed'),'number',gruppe,'mm/s');
+			inpbutt=new inputElement(getWort('movespeed'),'number',gruppe,'mm/min');
 			inpbutt.setVal(Programmeinstellungen.gcodeoptions.movespeed);
 			inpbutt.setMinMaxStp(500,5000);
 			inpbutt.addEventFunc(changeExportOptionen);
 			
-			inpbutt=new inputElement(getWort('drawspeed'),'number',gruppe,'mm/s');
+			inpbutt=new inputElement(getWort('drawspeed'),'number',gruppe,'mm/min');
 			inpbutt.setVal(Programmeinstellungen.gcodeoptions.drawspeed);
 			inpbutt.setMinMaxStp(500,5000);
 			inpbutt.addEventFunc(changeExportOptionen);
