@@ -23,8 +23,8 @@ var electron_app=function(){
 			"servoDown":0,
 			"servowaittime":0,//300ms warten, wenn up oder down
 			
-			"movespeed":3000,	//max F5000
-			"drawspeed":2000,	//max F5000
+			"movespeed":600,	//max F5000
+			"drawspeed":600,	//max F5000
 			
 			"endcode":"M84 \n", //disable motors
 				
@@ -493,12 +493,12 @@ var electron_app=function(){
 			inpbutt.setMinMaxStp(0,1000);
 			inpbutt.addEventFunc(changeExportOptionen);
 			
-			inpbutt=new inputElement(getWort('movespeed'),'number',gruppe);
+			inpbutt=new inputElement(getWort('movespeed'),'number',gruppe,'mm/s');
 			inpbutt.setVal(Programmeinstellungen.gcodeoptions.movespeed);
 			inpbutt.setMinMaxStp(500,5000);
 			inpbutt.addEventFunc(changeExportOptionen);
 			
-			inpbutt=new inputElement(getWort('drawspeed'),'number',gruppe);
+			inpbutt=new inputElement(getWort('drawspeed'),'number',gruppe,'mm/s');
 			inpbutt.setVal(Programmeinstellungen.gcodeoptions.drawspeed);
 			inpbutt.setMinMaxStp(500,5000);
 			inpbutt.addEventFunc(changeExportOptionen);
