@@ -9,7 +9,7 @@ Die Zeichnungen werden im gcode-Format gespeichert.
 Es können, neben gcode, auch SVG-Gafiken geladen werden. In den SVG-Grafiken müssen die Linien in "pfad"-Tags angelegt sein, andere Tags können nicht ausgewertet werden.
 
 Für die Ausführung ist ein Gerät mit Marlin-Firmeware von nöten, das ein Servo für den Stifthalter benutzt.
-Ich werde "Marlin 1.1.0-RC6" auf einem Rumba-Board nutzen.
+Ich benutze "Marlin 1.1.0-RC6" auf einem Rumba-Board (https://www.instagram.com/p/BZHirZBgRO-/ https://www.instagram.com/p/BY3j2lXDd58/).
 
 ![Beispiel](https://github.com/polygontwist/splinewriter/blob/master/exampel/tiger.jpg)
 
