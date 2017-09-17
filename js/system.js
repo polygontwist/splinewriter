@@ -56,7 +56,6 @@ var electron_app=function(){
 	
 	var inpElementeList=[];//Werkzeug-InputElemente
 	
-	
 	var zielNode;
 	var app = require('electron').remote; 
 	var path = require('path');
@@ -202,7 +201,10 @@ var electron_app=function(){
 	var statussaving=function(err){
 		if(err){
 			showDevTools(true);
-			console.log("Fehler:",err);
+			console.log("saveSettings Fehler:",err);
+		}
+		else{
+			console.log("saveSettings ok");	
 		}
 	}
 	var isdevtool=false;
@@ -329,9 +331,9 @@ var electron_app=function(){
 				if(ipe.getName()==getWort('movespeed')){Programmeinstellungen.gcodeoptions.movespeed=parseInt(ipe.getVal());}
 				if(ipe.getName()==getWort('drawspeed')){Programmeinstellungen.gcodeoptions.drawspeed=parseInt(ipe.getVal());}
 				if(ipe.getName()==getWort('endmoveYmax')){Programmeinstellungen.gcodeoptions.endmoveYmax=ipe.getVal();}
-				//save Programmeinstellungen
-				saveSettings();
 			}
+			//save Programmeinstellungen
+			saveSettings();
 			
 		}
 		
@@ -723,9 +725,13 @@ var electron_app=function(){
 		}
 		
 		this.importgcode=function(){
+				var dn=Programmeinstellungen.dateiio.lastdateiname;
+				if(dn=="")dn=appdata.userdokumente;
+
+				
 				dialog.showOpenDialog(
 					{
-						defaultPath :appdata.userdokumente,//+"/"+daten.filename,
+						defaultPath :dn,//+"/"+daten.filename,
 						properties: ['openFile'],
 						filters: [
 							{name: 'gcode,svg', extensions: ['gcode','svg']},
@@ -738,6 +744,8 @@ var electron_app=function(){
 						   else{
 							 // console.log(filesNames);// An array
 							  if(filesNames[0].length>4){
+									Programmeinstellungen.dateiio.lastdateiname=filesNames[0];
+								  
 									if(filesNames[0].indexOf('.gcode')>-1)
 										loadGCode(filesNames[0]);
 									else
@@ -1761,7 +1769,7 @@ var electron_app=function(){
 		var vmin=undefined;
 		var vmax=undefined;
 		var sendetimer=undefined;
-		var valsendenin=1000;//ms
+		var valsendenin=250;//ms
 		var basiselement=undefined;
 		
 		var fchange=undefined;

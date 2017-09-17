@@ -47,3 +47,4 @@ Temporary Items
 .apdisk
 dist/win-unpacked/*
 dist/latest.yml
+node_modules/*
