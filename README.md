@@ -13,6 +13,13 @@ Ich benutze "Marlin 1.1.0-RC6" auf einem Rumba-Board (https://www.instagram.com/
 
 ![Beispiel](https://github.com/polygontwist/splinewriter/blob/master/exampel/tiger.jpg)
 
+# Projekt updates
+* v0.0.1: erste Version; 
+* v0.0.2: neue Option: MoveTo Ymax; Einheiten für GEschwindigkeit; niedrigere Defaultwerte
+* v0.0.3: Korrektur Einheiten
+* v0.0.5: speichern optimiert; letzter Pfad wird gemerkt
+* v0.0.6: Buffixes and SVG export
+
 # Projekt bearbeiten
 
 Für die Bearbeitung diese Projektes benötigt man:<br>
