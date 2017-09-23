@@ -40,7 +40,7 @@ var sprachen=[
 		 "endmoveYmax":"endmove to Ymax",
 		 
 		 "notcorrectfile":"Diese Datei kann ich nicht lesen :-/",
-		 "notpfade":"Keine verwertbare Pfade enthalten :-/",
+		 "notpfade":"Keine verwertbare Pfade oder Polylines enthalten :-/",
 		 "scaletoblatt":"Auf Fläche scalieren?"
 		}
 	},
@@ -82,7 +82,7 @@ var sprachen=[
 		"endmoveYmax":"endmove to Ymax",
 		
 		"notcorrectfile":"I can not read this file :-/",
-		"notpfade":"No usable paths :-/",
+		"notpfade":"No usable paths or polylines :-/",
 		"scaletoblatt":"Scale to paper?"
 	 }
 	}

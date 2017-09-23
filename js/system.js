@@ -391,7 +391,7 @@ var electron_app=function(){
 			//gruppe=cE(werkznode,"article",undefined,"gruppe");
 			//import/export
 			inpbutt=new inputElement(getWort('loadgcode'),'button',gruppe);
-			inpbutt.addEventFunc( function(v){if(zeichenfeld)zeichenfeld.importgcode();} );
+			inpbutt.addEventFunc( function(v){if(zeichenfeld)zeichenfeld.importgcodesvg();} );
 			
 			
 			gruppe=cE(werkznode,"article",undefined,"gruppe");
@@ -600,10 +600,31 @@ var electron_app=function(){
 		}
 		
 		this.exportgcode=function(){
-			var lz,pz,p,linie,xx,yy;
 			//save ...
-			//zeichnung
+			var inptDateiname=function(fileName){
+				var typ="gcode";
+				if(fileName.indexOf('.svg')>-1)typ="svg";
+				
+				if(typ=="svg"){
+					fs.writeFileSync(fileName, getDataAsSVG(),'utf8');
+					alert("Datei "+fileName+" gespeichert.");					
+				}
+				else//gcode
+				{
+					 if(fileName.indexOf('.gcode')<0)fileName+='.gcode';
+					 fs.writeFileSync(fileName, getDataAsGcode(),'utf8');
+					 alert("Datei "+fileName+" gespeichert.");
+				}
+				
+				   
+				Programmeinstellungen.dateiio.lastdateiname=fileName;
+				saveSettings();
+			}			
+			getExportDateiname(inptDateiname);
+		}
 			
+		var getDataAsGcode=function(){	
+			var lz,pz,p,linie,xx,yy;
 			var daten="; SplineWriter\n";
 			
 			
@@ -720,11 +741,57 @@ var electron_app=function(){
 			daten+=Programmeinstellungen.gcodeoptions.endcode;
 			daten+="\n";
 			
-			
-			savedaten(daten);
+			return daten;			
 		}
 		
-		this.importgcode=function(){
+		var getDataAsSVG=function(){
+			var maxX=0,maxY=0,lz,linie,p,pz;
+			var yVersatz=0;//mm
+			var xVersatz=0;//mm
+			
+			var multiplikator_mm_to_px=64/22; //22->64
+			
+			var xMul=multiplikator_mm_to_px;
+			var yMul=multiplikator_mm_to_px;
+			
+			var data="<g id=\"Ebene_1\">\n";
+			
+			//create lines
+			for(lz=0;lz<zeichnung.length;lz++){
+				linie=zeichnung[lz];//Line
+								
+				data+="<polyline fill=\"none\" stroke=\"#000000\" points=\"";
+				
+				for(pz=0;pz<linie.length;pz++){
+						p=linie[pz];//Point
+						if(p.x>maxX)maxX=p.x;
+						if(p.y>maxY)maxY=p.y;
+						if(pz>0)data+=" ";
+						data+=rundeauf(p.x*xMul+xVersatz,3)+","+rundeauf(p.y*yMul+yVersatz,3);
+				}
+				
+				data+="\" />\n";
+			}
+			data+="</g>\n";
+			
+			//create header
+			var headdata="<?xml version=\"1.0\" encoding=\"utf-8\"?>\n";
+			headdata+="<!-- Generator: splinewriter -->\n";
+			headdata+="<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">\n";
+			headdata+="<svg version=\"1.1\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" x=\"0px\" y=\"0px\" width=\"";
+			headdata+=(maxX*xMul)+"px\" height=\"";
+			headdata+=(maxY*yMul)+"px\" viewBox=\"0 0 ";
+			headdata+=(maxX*xMul)+" ";
+			headdata+=(maxY*yMul)+"\" enable-background=\"new 0 0 ";
+			headdata+=(maxX*xMul)+" ";
+			headdata+=(maxY*yMul)+"\" xml:space=\"preserve\">\n";
+						
+			
+			data+="\n</svg>";			
+			return headdata+data;
+		}
+		
+		this.importgcodesvg=function(){
 				var dn=Programmeinstellungen.dateiio.lastdateiname;
 				if(dn=="")dn=appdata.userdokumente;
 
@@ -1299,7 +1366,7 @@ var electron_app=function(){
 			}
 			return Math.floor(val*st)/st;
 		}
-		var savedaten=function(daten){
+		var getExportDateiname=function(returnfunc){
 				var dn=Programmeinstellungen.dateiio.lastdateiname;
 				if(dn=="")dn=appdata.userdokumente;
 			//console.log(dn,">",Programmeinstellungen.dateiio.lastdateiname);
@@ -1308,7 +1375,9 @@ var electron_app=function(){
 							defaultPath :dn,//+"/"+daten.filename,
 							properties: ['openDirectory'],
 							filters: [
+								{name: 'gcode or svg', extensions: ['gcode','svg']},
 								{name: 'gcode', extensions: ['gcode']},
+								{name: 'svg', extensions: ['svg']},
 								{name: 'All Files', extensions: ['*']}
 							  ]
 						},
@@ -1318,13 +1387,7 @@ var electron_app=function(){
 									alert("Datei nicht gespeichert.");
 							   }
 							   else{
-								   if(fileName.indexOf('.gcode')<0)fileName+='.gcode';
-								   console.log("fileName",fileName);
-								   fs.writeFileSync(fileName, daten,'utf8');
-								   
-								   alert("Datei "+fileName+" gespeichert.");
-								   Programmeinstellungen.dateiio.lastdateiname=fileName;
-								   saveSettings();
+								   returnfunc(fileName);
 							   }
 						}
 					); 
@@ -1574,52 +1637,77 @@ var electron_app=function(){
 			
 			//https://developer.mozilla.org/en-US/docs/Web/API/SVGGeometryElement/getPointAtLength
 			
-			var soz,pfade;
+			var soz,pfade,polyline,gesammtobjekte;
 			var strichobjekte=['path','line','rect'];//ansich gehen nur Pfade...
 			var xmin=dbox.height,xmax=0;
 			var ymin=dbox.width,ymax=0;
 			var tmp;
 			
-			var calcfunnr=0;
+			var calcfunnr=-1;
 			var schleifenz=0;
 			
-			var clacpfade=function(){
+			var calcpfade=function(){
 					if(calcytimer!=undefined)clearTimeout(calcytimer);
-					
-					if(calcfunnr==0){
-							
-								pfade=svgdoc.getElementsByTagName('path');
-								if(pfade.length==0){
+					var point;
+					if(calcfunnr==-1){//get pfade/polyline
+						pfade=svgdoc.getElementsByTagName('path');
+						polyline=svgdoc.getElementsByTagName('polyline');
+						gesammtobjekte=pfade.length+polyline.length;
+						if(gesammtobjekte==0){
 									alert(getWort("notpfade"));
 									return;
 								}
+						
+						//<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="80.83px" height="17.27px" viewBox="0 0
+						
+						schleifenz=0;
+						calcfunnr=0;
+					}
+					
+					if(calcfunnr==0){//get min/max								
 								
 								i=schleifenz;
-								pfad=pfade[i];//.getAttribute('d')
-								pl=pfad.getTotalLength();
 								
-								//console.log("pflength",pl);
-								for(t=0;t<pl;t++){
-									svgpoint=pfad.getPointAtLength(t);
-									xmin=Math.min(svgpoint.x,xmin);
-									ymin=Math.min(svgpoint.y,ymin);
-									xmax=Math.max(svgpoint.y,xmax);
-									ymax=Math.max(svgpoint.y,ymax);
+								if(i<pfade.length){
+									//<path>
+									pfad=pfade[i];//.getAttribute('d')
+									pl=pfad.getTotalLength();									
+									//console.log("pflength",pl);
+									for(t=0;t<pl;t++){
+										point=pfad.getPointAtLength(t);
+										xmin=Math.min(point.x,xmin);
+										ymin=Math.min(point.y,ymin);
+										xmax=Math.max(point.x,xmax);
+										ymax=Math.max(point.y,ymax);
+									}
 								}
-								setLadebalken(50/pfade.length*i);
+								else{
+									//<polyline>
+									pfad=polyline[i-pfade.length];
+									pl=pfad.getAttribute('points').split(' ');
+									for(t=0;t<pl.length;t++){
+										point=pl[t].split(',');			
+										xmin=Math.min(parseFloat(point[0]),xmin);
+										ymin=Math.min(parseFloat(point[1]),ymin);
+										xmax=Math.max(parseFloat(point[0]),xmax);
+										ymax=Math.max(parseFloat(point[1]),ymax);
+									}
+								}
+								
+								setLadebalken(50/gesammtobjekte*i);
 								
 								schleifenz++;
-								if(schleifenz==pfade.length){
+								if(schleifenz==gesammtobjekte){
 									calcfunnr=1;
 									schleifenz=0;
 								}
 							
 					}
 					else
-					if(calcfunnr==1){
+					if(calcfunnr==1){//grafik auf Blattformat scalieren
 						setLadebalken(50);
 						console.log(xmin,xmax,ymin,ymax);
-						//grafik auf Blattformat scalieren
+						
 						tmp=Math.min(blattwidth/(xmax-xmin), blattheight/(ymax-ymin));
 						if(pxtommMul<tmp){
 							pxtommMul=tmp;
@@ -1632,43 +1720,63 @@ var electron_app=function(){
 						
 					}
 					else
-					if(calcfunnr==2){
-						
-							pfade=svgdoc.getElementsByTagName('path');
-							
+					if(calcfunnr==2){//zeichnen
 							i=schleifenz;
-							pfad=pfade[i];//.getAttribute('d')
-							pl=pfad.getTotalLength();
-							strichepunkte=[];
-							setLadebalken(50+50/pfade.length*i);
-							
-							for(t=0;t<pl;t++){
-								svgpoint=pfad.getPointAtLength(t);
+						
+							if(i<pfade.length){
+								
+								pfad=pfade[i];//.getAttribute('d')
+								pl=pfad.getTotalLength();
+								strichepunkte=[];
+								setLadebalken(50+50/pfade.length*i);
+								
+								for(t=0;t<pl;t++){
+									point=pfad.getPointAtLength(t);
+									strichepunkte.push({
+										x:(point.x-xmin)*pxtommMul,//mm
+										y:(point.y-ymin)*pxtommMul, 
+										px:(point.x-xmin)*mulScaleDraw,//pixel
+										py:(point.y-ymin)*mulScaleDraw
+										})
+								}
+								point=pfad.getPointAtLength(pl-0.01);
 								strichepunkte.push({
-									x:(svgpoint.x-xmin)*pxtommMul,//mm
-									y:(svgpoint.y-ymin)*pxtommMul, 
-									px:(svgpoint.x-xmin)*mulScaleDraw,//pixel
-									py:(svgpoint.y-ymin)*mulScaleDraw
-									})
+										x:(point.x-xmin)*pxtommMul,
+										y:(point.y-ymin)*pxtommMul, 
+										px:(point.x-xmin)*mulScaleDraw,
+										py:(point.y-ymin)*mulScaleDraw
+										})
+								
+								createLinie();//zeichnet px/py,optimiert auf x/y aus strichepunkte
+								
 							}
-							svgpoint=pfad.getPointAtLength(pl-0.01);
-							strichepunkte.push({
-									x:(svgpoint.x-xmin)*pxtommMul,
-									y:(svgpoint.y-ymin)*pxtommMul, 
-									px:(svgpoint.x-xmin)*mulScaleDraw,
-									py:(svgpoint.y-ymin)*mulScaleDraw
-									})
+							else{
+								//polyline
+								strichepunkte=[];
+								pfad=polyline[i-pfade.length];								
+								pl=pfad.getAttribute('points').split(' ');
+								for(t=0;t<pl.length;t++){
+									point=pl[t].split(',');			
+									strichepunkte.push({
+											x:(parseFloat(point[0])-xmin)*pxtommMul,
+											y:(parseFloat(point[1])-ymin)*pxtommMul, 
+											px:(parseFloat(point[0])-xmin)*mulScaleDraw,
+											py:(parseFloat(point[1])-ymin)*mulScaleDraw
+											})	
+										
+								}
+								createLinie();
+							}
 							
-							createLinie();//zeichnet px/py,optimiert auf x/y
 							
 							schleifenz++;
-							if(schleifenz==pfade.length){
+							if(schleifenz==gesammtobjekte){
 								calcfunnr=3;
 								schleifenz=0;
 							}
 					}
 					else
-					if(calcfunnr==3){
+					if(calcfunnr==3){//fertig
 						setLadebalken(100);
 						resizeZF();
 						setLadebalken(-1);
@@ -1676,12 +1784,14 @@ var electron_app=function(){
 					}
 					
 					if(calcfunnr<4){
-						calcytimer=setTimeout(clacpfade,1);
+						calcytimer=setTimeout(calcpfade,1);
 					}
 			}
 			
+			
 			//start Liniengenerierung
-			clacpfade();
+			calcpfade();
+			
 		}
 		
 		
