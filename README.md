@@ -18,8 +18,8 @@ Ich benutze "Marlin 1.1.0-RC6" auf einem Rumba-Board (https://www.instagram.com/
 * v0.0.2: neue Option: MoveTo Ymax; Einheiten für Geschwindigkeit; niedrigere Defaultwerte
 * v0.0.3: Korrektur Einheiten
 * v0.0.5: speichern optimiert; letzter Pfad wird gemerkt
-* v0.0.6: Buffixes and SVG export; import SVG-polyline
-* v0.0.7: Bigfix read polyline (Leerzeichen, Tab, Umbrüche im SVG-Attribut); ließt auch den line-Tag
+* v0.0.6: Bugfixes and SVG export; import SVG-polyline
+* v0.0.7: Bugfix read polyline (Leerzeichen, Tab, Umbrüche im SVG-Attribut); ließt auch den line-Tag
 
 # Projekt bearbeiten
 
