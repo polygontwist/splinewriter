@@ -1128,7 +1128,7 @@ var electron_app=function(){
 			for(i=1;i<punkteliste.length-1;i++){
 				p=punkteliste[i];
 				abst=streckenlaenge2D([pl.x,pl.y],[p.x,p.y]);//mm			
-				
+//if(isNaN(abst)){console.log("##",punkteliste);}				
 				pwl=punkteliste[i-1];//Punkt davor
 				//Punkte Winkel
 				p2=punkteliste[i+1]; //Punkt danach
@@ -1231,8 +1231,11 @@ var electron_app=function(){
 				pl=re[i-1];
 				p=re[i];				
 				abst+=streckenlaenge2D([pl.x,pl.y],[p.x,p.y]);
+				
 			}
+			
 			//console.log(re[0]);
+			if(punkteliste.length>2 && punkteliste.length>re.length)
 			console.log("Optimiert von",punkteliste.length,
 						'>',tmp.length,
 						"zu",re.length,"Länge:",abst);
@@ -1646,12 +1649,43 @@ var electron_app=function(){
 			var calcfunnr=-1;
 			var schleifenz=0;
 			
+			var LinesToPolypaht=function(SVGdoc){
+				var re=[],i,newNode, x1,y1,x2,y2;
+				var lines=SVGdoc.getElementsByTagName('line');
+				
+				//<line fill="none" stroke="#000000" stroke-width="0.75" stroke-linecap="round" stroke-linejoin="round" x1="144.275" y1="369.835" x2="144.075" y2="346.735"/>
+				//->
+				//<polyline fill="none" stroke="#000000" stroke-width="0.75" stroke-linecap="round" stroke-linejoin="round" points="142.175,406.735 142.175,406.735 142.175,406.535"/>
+				for(i=0;i<lines.length;i++){
+					x1=lines[i].getAttribute("x1");
+					y1=lines[i].getAttribute("y1");
+					x2=lines[i].getAttribute("x2");
+					y2=lines[i].getAttribute("y2");
+					if(
+						isNaN(parseFloat(x1)) || isNaN(parseFloat(x2)) ||
+						isNaN(parseFloat(y1)) || isNaN(parseFloat(y2)) 
+					){
+						
+					}
+					else{
+						newNode=document.createElement("polyline");
+						newNode.setAttribute("points",x1+','+y1+' '+x2+','+y2);
+						SVGdoc.appendChild(newNode);
+					}
+				}
+				return re;
+			}
+			
 			var calcpfade=function(){
 					if(calcytimer!=undefined)clearTimeout(calcytimer);
-					var point;
+					var point,attr;
 					if(calcfunnr==-1){//get pfade/polyline
+						//Linien zu polyline
+						LinesToPolypaht(svgdoc);
+						
 						pfade=svgdoc.getElementsByTagName('path');
 						polyline=svgdoc.getElementsByTagName('polyline');
+						
 						gesammtobjekte=pfade.length+polyline.length;
 						if(gesammtobjekte==0){
 									alert(getWort("notpfade"));
@@ -1684,13 +1718,28 @@ var electron_app=function(){
 								else{
 									//<polyline>
 									pfad=polyline[i-pfade.length];
-									pl=pfad.getAttribute('points').split(' ');
+									attr=pfad.getAttribute('points');
+									
+									attr=attr.split("\t").join('');
+									attr=attr.split("\r").join('');
+									attr=attr.split("\n").join('');
+									attr=attr.split("  ").join('');
+									pfad.setAttribute("points",attr);
+									
+									pl=attr.split(' ');
 									for(t=0;t<pl.length;t++){
-										point=pl[t].split(',');			
-										xmin=Math.min(parseFloat(point[0]),xmin);
-										ymin=Math.min(parseFloat(point[1]),ymin);
-										xmax=Math.max(parseFloat(point[0]),xmax);
-										ymax=Math.max(parseFloat(point[1]),ymax);
+										point=pl[t].split(',');
+										if(isNaN(parseFloat(point[0])) || isNaN(parseFloat(point[1]))){		
+											//leerzeichen	
+											//console.log(">>",attr,pl,point);
+										}
+										else{
+											xmin=Math.min(parseFloat(point[0]),xmin);
+											ymin=Math.min(parseFloat(point[1]),ymin);
+											xmax=Math.max(parseFloat(point[0]),xmax);
+											ymax=Math.max(parseFloat(point[1]),ymax);
+										}
+										
 									}
 								}
 								
@@ -1724,7 +1773,7 @@ var electron_app=function(){
 							i=schleifenz;
 						
 							if(i<pfade.length){
-								
+								//path
 								pfad=pfade[i];//.getAttribute('d')
 								pl=pfad.getTotalLength();
 								strichepunkte=[];
@@ -1756,7 +1805,11 @@ var electron_app=function(){
 								pfad=polyline[i-pfade.length];								
 								pl=pfad.getAttribute('points').split(' ');
 								for(t=0;t<pl.length;t++){
-									point=pl[t].split(',');			
+									point=pl[t].split(',');
+									if(isNaN(parseFloat(point[0])) || isNaN(parseFloat(point[1])) ){
+										
+									}
+									else
 									strichepunkte.push({
 											x:(parseFloat(point[0])-xmin)*pxtommMul,
 											y:(parseFloat(point[1])-ymin)*pxtommMul, 

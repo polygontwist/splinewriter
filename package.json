@@ -2,7 +2,7 @@
   "name": "SplineWriter",
   "productName": "SplineWriter",
   "description": "SplineWriter",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "author": "Andreas Kosmehl (ak@a-d-k.de)",
   "main": "main.js",
   "scripts": {
