@@ -46,3 +46,9 @@ Das kann dann wie jedes normale Programm von Nutzern installiert werden.
 Das Installationsprogramm ist dann im Verzeichnis `dist` zu finden.
 
 
+# Eingabeproblem-Tipp
+Ich benutze zu Eingebe ein Wacom-Tablett. Dabei hatte ich Probleme das der Anfang des Striches nicht aufgezeichnent wird (erst nach einigen Pixeln). 
+
+Die Lösung:
+
+In den Treibereinstellungen von Wacom → Stiftmodus → „Windowsfreihand verwenden“: __aus__
