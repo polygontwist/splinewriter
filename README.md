@@ -20,6 +20,7 @@ Ich benutze "Marlin 1.1.0-RC6" auf einem Rumba-Board (https://www.instagram.com/
 * v0.0.5: speichern optimiert; letzter Pfad wird gemerkt
 * v0.0.6: Bugfixes and SVG export; import SVG-polyline
 * v0.0.7: Bugfix read polyline (Leerzeichen, Tab, Umbrüche im SVG-Attribut); ließt auch den line-Tag
+* v0.0.8: Switch added to display the grid
 
 # Projekt bearbeiten
 
