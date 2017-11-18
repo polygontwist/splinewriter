@@ -279,6 +279,7 @@ var electron_app=function(){
 		var inpWidth;
 		var inpHeight;
 		//var inpAnzahlStriche;
+		var inpShowgrid;
 		var inpShowdots;
 		var inpShowdrawing;
 		
@@ -291,7 +292,7 @@ var electron_app=function(){
 			if(sWert=="width")	return parseInt(inpWidth.getVal());
 			if(sWert=="height")	return parseInt(inpHeight.getVal());
 			if(sWert=="linewidth")	return parseFloat(inpStaerke.getVal());
-			if(sWert=="showdots")return inpShowdots.getVal();
+			if(sWert=="showgrid")return inpShowgrid.getVal();
 			if(sWert=="showdots")return inpShowdots.getVal();
 			if(sWert=="showdraw")return inpShowdrawing.getVal();
 		}
@@ -423,6 +424,9 @@ var electron_app=function(){
 			
 			inpbutt=new inputElement(getWort('dellaststroke'),'button',gruppe);
 			inpbutt.addEventFunc( function(v){if(zeichenfeld)zeichenfeld.dellaststroke();} );
+			
+			inpShowgrid=new inputElement(getWort('showgrid'),'checkbox',gruppe);
+			inpShowgrid.addEventFunc(changeElemente);
 			
 			inpShowdots=new inputElement(getWort('showdots'),'checkbox',gruppe);
 			inpShowdots.addEventFunc(changeElemente);
@@ -1027,6 +1031,13 @@ var electron_app=function(){
 				
 				canvasLines.width=canb;
 				canvasLines.height=canh;
+				
+				if(werkzeuge.get("showgrid")){
+					canvasLines.style.display="block";
+				}else{
+					canvasLines.style.display="none";
+				}
+				
 				
 				canvasZeichnung.width=canb;
 				canvasZeichnung.height=canh;
