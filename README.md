@@ -22,6 +22,9 @@ Ich benutze "Marlin 1.1.0-RC6" auf einem Rumba-Board (https://www.instagram.com/
 * v0.0.7: Bugfix read polyline (Leerzeichen, Tab, Umbrüche im SVG-Attribut); ließt auch den line-Tag
 * v0.0.8: Switch added to display the grid
 
+# Programm benutzen
+Für Windows-Nutzer liegt eine fertige Instalation im Ordner "dist".
+
 # Projekt bearbeiten
 
 Für die Bearbeitung diese Projektes benötigt man:<br>
