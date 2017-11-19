@@ -39,6 +39,8 @@ var electron_app=function(){
 			"grobabweichung":80,	//°Winkel	
 			"weitemm":2.5,			//verschiebe um mm
 			
+			"showgrid":true,
+			
 			"blatt":{"width":100,"height":100}
 		},
 		dateiio:{
@@ -156,6 +158,7 @@ var electron_app=function(){
 	
 	var addprobs=function(ziel,props){
 		var property;
+		
 		for( property in props ) {
 			if(typeof props[property] === "object"){
 				if(ziel[property]==undefined)ziel[property]={};
@@ -172,15 +175,17 @@ var electron_app=function(){
 		if(fs.existsSync(appdata.pathData+appdata.DateinameOptionen)){
 			r=fs.readFileSync(appdata.pathData+appdata.DateinameOptionen,'utf-8',"a");
 			if(r!=""){
+				console.log('loaded',appdata.pathData+appdata.DateinameOptionen);
 				optionen=JSON.parse(r);
 				if(optionen.windowsize!=undefined){
 					win.setPosition(optionen.windowsize.x,optionen.windowsize.y);
 					if(optionen.windowsize.width>0 && optionen.windowsize.height>0)
 						win.setSize(optionen.windowsize.width,optionen.windowsize.height);
 				}
-				//setings
+				//settings
 				//gespeicherte Propertys anfügen/ersetzen
 				addprobs(Programmeinstellungen,optionen);
+				console.log(Programmeinstellungen,optionen);
 			}
 		}
 		else{
@@ -197,6 +202,7 @@ var electron_app=function(){
 				'utf-8',
 				statussaving
 			);
+		console.log("save",Programmeinstellungen);
 	}	
 	var statussaving=function(err){
 		if(err){
@@ -288,6 +294,7 @@ var electron_app=function(){
 			
 			Programmeinstellungen.drawoptions.blatt.width=parseInt(inpWidth.getVal());
 			Programmeinstellungen.drawoptions.blatt.height= parseInt(inpHeight.getVal());
+			Programmeinstellungen.drawoptions.showgrid=inpShowgrid.getVal();
 			
 			if(sWert=="width")	return parseInt(inpWidth.getVal());
 			if(sWert=="height")	return parseInt(inpHeight.getVal());
@@ -332,6 +339,7 @@ var electron_app=function(){
 				if(ipe.getName()==getWort('movespeed')){Programmeinstellungen.gcodeoptions.movespeed=parseInt(ipe.getVal());}
 				if(ipe.getName()==getWort('drawspeed')){Programmeinstellungen.gcodeoptions.drawspeed=parseInt(ipe.getVal());}
 				if(ipe.getName()==getWort('endmoveYmax')){Programmeinstellungen.gcodeoptions.endmoveYmax=ipe.getVal();}
+				if(ipe.getName()==getWort('showgrid')){Programmeinstellungen.drawoptions.showgrid=ipe.getVal();}
 			}
 			//save Programmeinstellungen
 			saveSettings();
@@ -426,6 +434,7 @@ var electron_app=function(){
 			inpbutt.addEventFunc( function(v){if(zeichenfeld)zeichenfeld.dellaststroke();} );
 			
 			inpShowgrid=new inputElement(getWort('showgrid'),'checkbox',gruppe);
+			inpShowgrid.setVal(Programmeinstellungen.drawoptions.showgrid);
 			inpShowgrid.addEventFunc(changeElemente);
 			
 			inpShowdots=new inputElement(getWort('showdots'),'checkbox',gruppe);
