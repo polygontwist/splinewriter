@@ -1619,6 +1619,8 @@ var electron_app=function(){
 			
 			var daten=fs.readFileSync(fileName, 'utf8');
 			
+			var scalieren=false;
+			
 			//Pfade aufsplitten
 			if(daten.indexOf(" M")>-1){
 				console.log("trenne Pfade");
@@ -1641,12 +1643,15 @@ var electron_app=function(){
 			var dbox={"x":sarr[0],"y":sarr[1],"width":sarr[2],"height":sarr[3]};
 			
 			if(!confirm(getWort("scaletoblatt"))){
-				//scalieren auf document oder 72dpi (mm=px/72dpi*25,4mm)
+				//Blatt scalieren
 				blattwidth=Math.floor(dbox.width/72*25.4);
 				blattheight=Math.floor(dbox.height/72*25.4);
 				werkzeuge.set("width",blattwidth);
 				werkzeuge.set("height",blattheight);
 				resizeZF();
+			}else{
+				//scalieren auf document oder 72dpi (mm=px/72dpi*25,4mm)
+				scalieren=true;
 			}
 			
 			
@@ -1662,9 +1667,17 @@ var electron_app=function(){
 			
 			var soz,pfade,polyline,gesammtobjekte;
 			var strichobjekte=['path','line','rect'];//ansich gehen nur Pfade...
-			var xmin=dbox.height,xmax=0;
-			var ymin=dbox.width,ymax=0;
+			var xmin=dbox.width,xmax=0;
+			var ymin=dbox.height,ymax=0;
 			var tmp;
+			
+			if(scalieren===false){
+				xmin=0;
+				ymin=0;
+				xmax=dbox.width;
+				ymax=dbox.height;
+			}
+			console.log("scalieren",scalieren);
 			
 			var calcfunnr=-1;
 			var schleifenz=0;
