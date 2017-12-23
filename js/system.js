@@ -41,7 +41,7 @@ var electron_app=function(){
 			
 			"showgrid":true,
 			
-			"blatt":{"width":100,"height":100}
+			"blatt":{"width":100,"height":100,"zoom":1}
 		},
 		dateiio:{
 			"lastdateiname":""
@@ -193,8 +193,17 @@ var electron_app=function(){
 		}
 	}
 
-	
+	var savesettingtimer=undefined;
 	var saveSettings=function(){
+		if(savesettingtimer!=undefined)clearTimeout(savesettingtimer);
+		savesettingtimer=setTimeout(saveSettingsNow,50);//50ms Verzug, da Mehrfachaufrufe erfolgen
+	}
+	
+	var saveSettingsNow=function(){
+		if(savesettingtimer!=undefined){
+			clearTimeout(savesettingtimer);
+			savesettingtimer=undefined;
+		}
 		//asyncron
 		fs.writeFile(
 				appdata.pathData+appdata.DateinameOptionen, 
@@ -284,6 +293,7 @@ var electron_app=function(){
 		var inpStaerke;
 		var inpWidth;
 		var inpHeight;
+		var inpZoom;
 		//var inpAnzahlStriche;
 		var inpShowgrid;
 		var inpShowdots;
@@ -294,10 +304,12 @@ var electron_app=function(){
 			
 			Programmeinstellungen.drawoptions.blatt.width=parseInt(inpWidth.getVal());
 			Programmeinstellungen.drawoptions.blatt.height= parseInt(inpHeight.getVal());
+			Programmeinstellungen.drawoptions.blatt.zoom= parseFloat(inpZoom.getVal());
 			Programmeinstellungen.drawoptions.showgrid=inpShowgrid.getVal();
 			
 			if(sWert=="width")	return parseInt(inpWidth.getVal());
 			if(sWert=="height")	return parseInt(inpHeight.getVal());
+			if(sWert=="zoom")	return parseFloat(inpZoom.getVal());
 			if(sWert=="linewidth")	return parseFloat(inpStaerke.getVal());
 			if(sWert=="showgrid")return inpShowgrid.getVal();
 			if(sWert=="showdots")return inpShowdots.getVal();
@@ -306,6 +318,7 @@ var electron_app=function(){
 		this.set=function(id,wert){
 			if(id=="width")	inpWidth.setVal(parseInt(wert));
 			if(id=="height")inpHeight.setVal(parseInt(wert));
+			//if(id=="zoom")inpHeight.setVal(parseFloat(wert));
 			saveSettings();
 		}
 		
@@ -396,6 +409,12 @@ var electron_app=function(){
 			inpHeight.setVal(Programmeinstellungen.drawoptions.blatt.height);
 			inpHeight.setMinMaxStp(0,500);
 			inpHeight.addEventFunc(changeElemente);
+			
+			inpZoom=new inputElement(getWort('zoomfactor'),'number',gruppe);
+			inpZoom.setVal(Programmeinstellungen.drawoptions.blatt.zoom);
+			inpZoom.setMinMaxStp(0.1,5,0.1);
+			inpZoom.addEventFunc(changeElemente);
+			
 			
 			//gruppe=cE(werkznode,"article",undefined,"gruppe");
 			//import/export
@@ -552,6 +571,7 @@ var electron_app=function(){
 		var apptitel="";
 		var korr=0.5;
 		var stiftsize=1;//mm
+		var zommfactor=1;
 		
 		var farbeStift="#000000";
 		var farbeZeichnung="#222222";
@@ -1018,6 +1038,9 @@ var electron_app=function(){
 				var b=werkzeuge.get("width");//mm
 				var h=werkzeuge.get("height");//mm
 				
+				zommfactor=werkzeuge.get("zoom");
+				if(isNaN(zommfactor))zommfactor=1;
+				
 				var bw=basisnode.offsetWidth -rand*2;
 				var bh=basisnode.offsetHeight-rand*2;
 				var canb=bw;
@@ -1031,6 +1054,8 @@ var electron_app=function(){
 					//höhe=bh,breite berechen
 					canb=canh/h*b;
 				}
+				canb=canb*zommfactor;
+				canh=canh*zommfactor;
 				
 				canvasHG.width=canb;
 				canvasHG.height=canh;
