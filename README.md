@@ -21,6 +21,9 @@ Ich benutze "Marlin 1.1.0-RC6" auf einem Rumba-Board (https://www.instagram.com/
 * v0.0.6: Bugfixes and SVG export; import SVG-polyline
 * v0.0.7: Bugfix read polyline (Leerzeichen, Tab, Umbrüche im SVG-Attribut); ließt auch den line-Tag
 * v0.0.8: Switch added to display the grid
+* v0.0.9: fix Scalierungsfehler
+* v0.1.0: die Zeichenfläche läßt sich vergrößern
+* v0.1.1: Linien können so sortiert werden, das die leerfahrten reduziert werden. Punkteanzeige wird der 1.Punkt rot und die restlichen orange gefärbt.
 
 # Programm benutzen
 Für Windows-Nutzer liegt eine fertige Instalation im Ordner "dist".
