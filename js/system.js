@@ -137,6 +137,10 @@ var electron_app=function(){
 		return Math.floor(re*100)/100;
 	}
 	
+	var streckenlaengePoint=function(p1,p2){
+		return Math.sqrt( Math.pow(p2.y-p1.y,2)+Math.pow(p2.x-p1.x,2));
+	}
+	
 	function getMouseP(e){
 		return{
 			x:document.all ? window.event.clientX : e.pageX,	//pageX
@@ -232,6 +236,7 @@ var electron_app=function(){
 		isdevtool=b;
 		Programmeinstellungen.showDevTool=b;
 	}
+	
 	
 	//--basicsEvent--
 	var EventResize=function(event){
@@ -462,6 +467,9 @@ var electron_app=function(){
 			inpShowdrawing=new inputElement(getWort('showdraw'),'checkbox',gruppe);
 			inpShowdrawing.addEventFunc(changeElemente);
 			
+			//Optimierungen
+			inpbutt=new inputElement(getWort('optimizestrokes'),'button',gruppe);
+			inpbutt.addEventFunc( function(v){if(zeichenfeld)zeichenfeld.optimizestrokes();} );
 			
 			
 			gruppe=cE(werkznode,"article",undefined,"gruppe");
@@ -575,7 +583,8 @@ var electron_app=function(){
 		
 		var farbeStift="#000000";
 		var farbeZeichnung="#222222";
-		var farbepunkte="#ff0000";
+		var farbepunkteStart="#ff0000";
+		var farbepunkte="#ffd65b";
 		
 		var mausXY={x:0,y:0,px:0,py:0};//cm|pixel
 		var mausstat={
@@ -909,6 +918,109 @@ var electron_app=function(){
 			return canvasVorlage.hatVorlage;
 		}
 		
+		this.optimizestrokes=function(){
+			//Linien so sortieren das leerfahren sehr kurz sind
+			
+			//zeichnung[] ganze Zeichnung (array of Linie)
+			//strichepunkte[] aktuelle Linie
+			var iline,ipoint,linie;
+			
+			if(zeichnung.length<3)return;
+			
+			
+			var sortlineEA=function(){
+				var i,t, linieA,linieB,pA,pB,pBe ,idA,idB,isadd, entfernung, id,
+					templine,
+					nexline={line:undefined,entfernung:undefined};
+				var zeichnung_neu=[];
+				
+				var ignoreRichtung=false;
+				
+				if(!confirm(getWort("frageReverseLines"))){
+					ignoreRichtung=true;
+				}
+				
+				linieA=zeichnung[0];
+				pA=linieA[linieA.length-1];
+				linieA[0].isadd=true;
+				zeichnung_neu.push(linieA);
+				
+				
+				for(i=0;i<zeichnung.length;i++){//alle Linien durchgehen
+					nexline={line:undefined,entfernung:undefined,reverse:false};
+					
+					for(t=0;t<zeichnung.length;t++){//mit allen vergleichen
+						linieB=zeichnung[t];
+						pB=linieB[0];//erster Punkt
+						pBe=linieB[linieB.length-1];//letzter Punkt
+						isadd=linieB[0].isadd;
+						if(!isadd){
+							entfernung=streckenlaengePoint(pA,pB);
+							
+							if(nexline.entfernung==undefined){
+								nexline.entfernung=entfernung;
+								nexline.line=linieB;
+								nexline.reverse=false;
+							}
+							else{
+								if(entfernung<nexline.entfernung){
+									nexline.entfernung=entfernung;
+									nexline.line=linieB;
+									nexline.reverse=false;
+								}
+								
+								if(ignoreRichtung){//auf Endpunkt testen
+									entfernung=streckenlaengePoint(pA,pBe);
+									if(entfernung<nexline.entfernung){
+										nexline.entfernung=entfernung;
+										nexline.line=linieB;
+										nexline.reverse=true;
+									}
+								}
+							}
+							
+						}
+					}
+					
+					if(nexline.line!=undefined){
+						//Linie hinzufügen
+						linieB=nexline.line;
+						id=linieB[0].id;
+						linieB[0].isadd=true;
+						if(nexline.reverse){
+							templine=[];
+							for(t=0;t<linieB.length;t++){
+								templine.push(linieB[linieB.length-1-t]);
+							}
+							linieB=templine;
+						}
+						linieB[0].id=id;
+						linieB[0].isadd=true;		//auf übernommen setzen
+						zeichnung_neu.push(linieB);
+						
+						//hinzugefügte Linie als neuen Ausgangspunkt setzen
+						linieA=linieB;
+						pA=linieA[linieA.length-1];
+					}
+					
+				}
+				//console.log('sortlineEA',zeichnung.length,zeichnung_neu.length);
+				zeichnung=zeichnung_neu;
+			}
+			
+			for(iline=0;iline<zeichnung.length;iline++){
+				linie=zeichnung[iline];//of points
+				if(linie.length>0){
+					linie[0].id="L"+iline;//ersten Punkt mit ID versehen
+					linie[0].isadd=false; //für sortlineEA
+				}
+			}
+			
+			//nimm eine Linie und gucke welche andere am nächsten vom Endpunkt ist
+			sortlineEA();
+			
+			resizeZF();//zeichnung neu auf Blatt malen
+		}
 		
 		//--func--
 		var setLadebalken=function(v){
@@ -967,7 +1079,9 @@ var electron_app=function(){
 				//point
 				if(werkzeuge.get("showdots")){
 					var siz=lw*1;
-					cc.fillStyle=farbepunkte;
+					cc.fillStyle=farbepunkteStart;
+					if(strichepunkte.length>0)
+						cc.fillStyle=farbepunkte;
 					cc.fillRect(mausXY.px+0.5-siz*0.5,mausXY.py+0.5-siz*0.5,siz,siz);
 				}
 				
@@ -1280,11 +1394,12 @@ var electron_app=function(){
 			}
 			
 			//console.log(re[0]);
+			/*
 			if(punkteliste.length>2 && punkteliste.length>re.length)
 			console.log("Optimiert von",punkteliste.length,
 						'>',tmp.length,
 						"zu",re.length,"Länge:",abst);
-			
+			*/
 			//if(abst==0)re=[]; //aktivieren, wenn man keine Punkte mag
 				
 			return re;
@@ -1320,10 +1435,13 @@ var electron_app=function(){
 			cc.stroke();
 			
 			//punkte einzeichnen
-			cc.fillStyle=farbepunkte;
+			cc.fillStyle=farbepunkteStart;
 			if(werkzeuge.get("showdots"))
 			for(i=0;i<AoptimierteLinie.length;i++){
 				p=AoptimierteLinie[i];
+				if(i==1)
+					cc.fillStyle=farbepunkte;
+					
 				cc.fillRect(p.px+korr-1,p.py+korr-1,3,3);
 			}
 			
@@ -1373,14 +1491,15 @@ var electron_app=function(){
 				}
 				cc.stroke();
 				//punkte einzeichnen
-				cc.fillStyle=farbepunkte;
+				cc.fillStyle=farbepunkteStart;
 				if(werkzeuge.get("showdots"))
-				for(ip=0;ip<line.length;ip++){
-					p=line[ip];
-					xx=(p.x*MulmmToPix);
-					yy=(p.y*MulmmToPix);
-					cc.fillRect(xx+korr-1,yy+korr-1,3,3);
-				}
+					for(ip=0;ip<line.length;ip++){
+						p=line[ip];
+						xx=(p.x*MulmmToPix);
+						yy=(p.y*MulmmToPix);
+						if(ip==1)cc.fillStyle=farbepunkte;
+						cc.fillRect(xx+korr-1,yy+korr-1,3,3);
+					}
 				
 				posline++;
 				if(posline<zeichnung.length){
@@ -1392,7 +1511,9 @@ var electron_app=function(){
 			}
 			
 			if(werkzeuge.get("showdraw")){
-				wait=20;//ms
+				wait=Math.floor(1/zeichnung.length*10000*2);
+				if(wait==0)wait=1;
+				if(wait>20)wait=20;
 			}
 			zeichnen();
 		}
@@ -1625,7 +1746,6 @@ var electron_app=function(){
 			
 			setLadebalken(100);
 			resizeZF();
-			showZeichnung();
 			setLadebalken(-1);
 			
 		}

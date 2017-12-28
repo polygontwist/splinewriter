@@ -1,0 +1,20 @@
+Programmfluß
+
+[loadSVG]
+-resizeZF()
+
+[loadGCode]
+-resizeZF()
+
+
+[resizeZF]
+	-showHGMuster() Raster aktualisieren
+	-showZeichnung() [[Linien auf canvas malen]]
+
+
+[drawLine]
+mouseUP:
+	-createLinie()
+	  -Strichoptimieren()
+	  -[[Linien auf canvas malen]]
+	  -refreshInputElemente()

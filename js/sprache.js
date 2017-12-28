@@ -17,6 +17,9 @@ var sprachen=[
 		 "showgrid":"Gitter zeigen",
 		 "showdots":"Punkte zeigen",
 		 "showdraw":"Zeichnung zeichnen",
+		 "optimizestrokes":"Linien optimieren",
+		 "frageReverseLines":"Darf die Linienrichtung umgekehrt werden?",
+		 
 		 "moveto":"verschieben nach",
 		 "moveleft":"links",
 		 "moveright":"rechts",
@@ -61,6 +64,9 @@ var sprachen=[
 		"showgrid":"Show grid",
 		"showdots":"Show points",
 		"showdraw":"Show drawing",
+		"optimizestrokes":"optimize strokes",
+		"frageReverseLines":"Can the line direction be reversed?",
+		 
 		"moveto":"move to the ",
 		"moveleft":"left",
 		"moveright":"right",
