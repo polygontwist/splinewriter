@@ -28,7 +28,7 @@ Ab der Version v0.1.2 ist die gcode-Ausgabe soweit anpassbar, das man auch einen
 * v0.1.2: gcode Einstellungen in Dialog ausgelagert, mit Möglichkeit je nach eigener Maschine Eintellungen vorzunehmen (z.B: für Laser statt Plotter)
 
 # Programm benutzen
-Für Windows-Nutzer liegt eine fertige Instalation im Ordner "dist".
+Für Windows-Nutzer liegt eine fertige Installation im Ordner "dist".
 
 # Projekt bearbeiten
 
