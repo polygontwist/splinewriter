@@ -198,47 +198,128 @@ input[type="text"]:disabled{
 #werkzeuge input[type="button"].minibutt{
 	width:50%;
 }
+
+
+#dialog{
+	width:100%;
+	height:100%;
+	background-color:rgba(0,0,0,0.6);
+	position:absolute;
+	left:0;
+	top:0;
+}
+#dialogtitel{
+	width:calc(100% - 10px);
+	height:25px;
+	top:5px;
+	left:5px;
 	
-/*
-
-
-#werkzeuge input{width:100px;}
-
-
-#werkzeuge input.button{width:90%;margin-left:5%;}
-
-
-
-#werkzeuge .gruppe{
-	padding-left: 25px;
+	font-size:12pt;
+	margin:0;
+	font-weight:normal;
+	position: absolute;
+    background-color: #eaeaea;
+    text-align: center;
 }
-#werkzeuge .gruppe .block{
-	padding-left: 0px;
+#dialogtitelbutt{
+	position:absolute;
+	top:5px;
+	right:10px;	
+	height:20px;
+	line-height: 20px;
 }
-#werkzeuge .gruppe .block input{
-	margin-left: 0px;
+#dialogtitelbutt a{
+	display:inline-block;
+	width: 20px;
+	height:20px;
+	text-decoration:none;
+	text-align:center;
+	font-weight:bold;
+	font-size:12px;
+	position:relative;
+	margin-left:5px;
 }
-#werkzeuge .gruppentext{display:block;}
 
-#werkzeuge .minibutt{
-		display:inline-block;
-		width:48%;
-		padding:0;
-		padding-right:5px;
-		padding-bottom:5px;
-		}
-#werkzeuge .minibutt input{
-		width: 100%;
-		margin:0;
-		}
-.moveL{}
-.moveR{}
-.moveT{}
-.moveD{}
+.closebutton{
+	background-color:#ffffff;
+	color:#000;
+	-webkit-border-radius:10px;
+	-moz-border-radius:10px;
+	border-radius:10px;
+}
 
-*/
+#dialogcontent{
+	position: absolute;
+    width:calc(100% - 10px);
+	top:30px;
+	left:5px;
+	bottom:5px;
+	background-color:#dddddd;
+	overflow: auto;
+}
+#dialogcontent article{
+	padding: 10px;
+}
 
+#dialogcontent .input2 .labeltext{
+	min-width: 50%;
+    display: inline-block;
+}
 
+.unsichtbar{
+	display:none;
+}
+	
+#vorlagenwahl{
+	width:100%;
+	min-height:30px;
+	max-height:100px;
+	overflow:auto;
+	padding: 10px;
+	background-color: #cacaca;
+}
+#vorlagenwahl ul{
+	margin:0;
+	padding:0;
+}
+#vorlagenwahl ul li{
+	list-style-type: none;
+	padding:5px;
+	margin:0;
+	background-color:rgba(0,0,0,0.02);
+}
+
+#vorlagenwahl ul li:nth-child(even) {
+	background-color:rgba(255,255,255,0.1);
+}
+
+#vorlagenwahl ul li input[type="button"]{
+	float:right;
+	margin-left:5px;
+	cursor: pointer;
+}
+
+.vorlageninputs{
+	padding:10px;
+}
+.gcodinputtabelle{
+	width:100%;
+}
+.gcodinputtabelle div{
+	display:table-row;
+}
+
+.gcodinputtabelle label,.gcodinputtabelle textarea{
+	display: table-cell;
+	vertical-align: top;
+}
+.gcodinputtabelle label{
+	width:30%;
+}
+.gcodinputtabelle textarea{
+	width:100%;
+	min-height:90px;
+}
 
 .booleanswitch{
 	display:none;/**/

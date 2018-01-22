@@ -3,8 +3,43 @@
 	Grundsetting mit laden/speichern der aktuellen Fensterposition und Größe (+Setting in Programmeinstellungen)
 	
 	alle Maße in mm
+	
+	TODO: 
+	-wechsel der Spache
+	-farbige Linien -> gcode Select Tool? "; color:#rrggbb" M280 P0 S0  P=Servonr.
+	
 */
+/*
+	HTML:
+	<body class="main">
+		<div id="myapplication">
+			<div id="zeichenfeld">										
+				<canvas id="canHG"/>									für Maße, sonst nicht genutzt (TODO: überflüssig?)
+				<canvas id="canVorlage"/>								Vorlagebild
+				<canvas id="canLines"/>									Gitter
+				<canvas id="canZeichnung"/>								Zeichnung
+				<div id="ladebalken"><div id="lbfill"></div></div>		Ladebalken, oberhalb
+				<canvas id="canDraw"/>									aktuelle Linie die gerade gezeichnet wird
+			</div>
+			<div id="werkzeuge">
+				<a class="ocbutt"></a>									Button um Seitenmenü ein-/auszuschalten
+				<article></article>										Gruppe mit Buttons input etc.
+				...
+			</div>
+			<div id="dialog"></div>
+		</div>
+	</body>
+*/
+/*
+optionen.json
+{"windowsize":{"x":537,"y":11,"width":1351,"height":935},
+"gcodeoptions":{"spiegelY":false,"spiegelX":true}
 
+,"drawoptions":{"abweichung":6,"abstandmin":0.8,"grobabweichung":80,"weitemm":2.5,"showgrid":true,"blatt":{"width":100,"height":100,"zoom":1}},
+"dateiio":{"lastdateiname":"D:\\grafik\\_test_.gcode"},
+
+"showDevTool":true}
+*/
 
 const electron = require('electron');
 const {remote} = electron;
@@ -17,20 +52,42 @@ var electron_app=function(){
 	var Programmeinstellungen={//als Einstellungen gespeichert
 		windowsize:{x:0,y:0,width:0,height:0},
 		gcodeoptions:{
-			"servoport":"P0", //M280 P0 S50 ;S0..200
-			"servoUP":83,
-			"servoUPwriting":40,
-			"servoDown":0,
-			"servowaittime":0,//300ms warten, wenn up oder down
-			
-			"movespeed":600,	//max F5000
-			"drawspeed":600,	//max F5000
-			
-			"endcode":"M84 \n", //disable motors
-				
 			"spiegelY":false,
-			"spiegelX":true,			
-			"endmoveYmax":true			
+			"spiegelX":true				
+		},
+		gcodevorlagen:[
+			{	"name":"Plotter",
+				"erasable":false,
+				"gcodeprestart":	";$sysinfo\nG21 ; set units to millimeters\nG90 ; use absolute coordinates\n\n",//Zeilenumbruch mit "\n"
+				"gcodestart":		"M400 ; Wait for current moves to finish\nM280 P0 S83 ;Servo up\nG4 P200 ;wait 200ms",
+				"gcodeLinienbegin":	"M400 ; wait\nM280 P0 S0 ;servo down\nG4 P200 ;wait 200ms",
+				"gcodeLinienende":	"M400 ; wait\nM280 P0 S40 ;servo up\nG4 P200 ;wait 200ms",
+				"gcodeende":		"M280 P0 S83; servo up\nG4 P200;wait 200ms\n\n$movetoYmax\nM84 ;disable Motors",
+				"movespeed":1500,	//max F5000
+				"drawspeed":600		//max F5000
+			}
+			,		
+			{	"name":"Laser",
+				"erasable":true,
+				"gcodeprestart":	";$sysinfo\nG90 ;absolute Position\nM08 ;Flood Coolant On\nG21 ; set units to millimeters\n\n",//Zeilenumbruch mit "\n"
+				"gcodestart":		"",
+				"gcodeLinienbegin":	"M3",
+				"gcodeLinienende":	"M5",
+				"gcodeende":		"M9 ; Coolant Off\n$movetoStart",
+				"movespeed":600,	//max F5000
+				"drawspeed":600		//max F5000
+			}
+		
+		]
+		,
+		gcodeoptionsV2:{
+				"gcodeprestart":		"; $sysinfo\nG21 ; set units to millimeters\nG90 ; use absolute coordinates\n",//Zeilenumbruch mit "\n"
+				"gcodestart":			"M400 ; Wait for current moves to finish\nM280 P0 S83 ;Servo up\nG4 P200 ;wait 200ms",
+				"gcodeLinienbegin":	"M400 ; wait\nM280 P0 S0 ;servo down\nG4 P200 ;wait 200ms",
+				"gcodeLinienende":	"M400 ; wait\nM280 P0 S40 ;servo up\nG4 P200 ;wait 200ms",
+				"gcodeende":			"M280 P0 S83; servo up\nG4 P200;wait 200ms\n\n$movetoYmax\nM84 ;disable Motors",
+				"movespeed":600,	//max F5000
+				"drawspeed":600		//max F5000
 		},
 		drawoptions:{
 			//Line-Optimierungen
@@ -279,6 +336,7 @@ var electron_app=function(){
 	//--Programm--
 	var zeichenfeld;	
 	var werkzeuge;
+	var thedialog;
 	
 		
 	var CreateProgramm=function(){
@@ -288,6 +346,8 @@ var electron_app=function(){
 		zeichenfeld=new oZeichenfeld(zielNode);
 		
 		werkzeuge=new oWerkzeuge(zielNode);
+		
+		thedialog=new oDialog(zielNode);
 		
 		zeichenfeld.resize();
 		console.log("press STRG+D for developertools.");
@@ -350,13 +410,6 @@ var electron_app=function(){
 			for(i=0;i<inpElementeList.length;i++){
 				ipe=inpElementeList[i];
 				
-				if(ipe.getName()==getWort('servoUP'))	{Programmeinstellungen.gcodeoptions.servoUP=parseInt(ipe.getVal());}
-				if(ipe.getName()==getWort('servoUPwriting')){Programmeinstellungen.gcodeoptions.servoUPwriting=parseInt(ipe.getVal());}
-				if(ipe.getName()==getWort('servoDown')){Programmeinstellungen.gcodeoptions.servoDown=parseInt(ipe.getVal());}
-				if(ipe.getName()==getWort('servowaittime')){Programmeinstellungen.gcodeoptions.servowaittime=parseInt(ipe.getVal());}
-				if(ipe.getName()==getWort('movespeed')){Programmeinstellungen.gcodeoptions.movespeed=parseInt(ipe.getVal());}
-				if(ipe.getName()==getWort('drawspeed')){Programmeinstellungen.gcodeoptions.drawspeed=parseInt(ipe.getVal());}
-				if(ipe.getName()==getWort('endmoveYmax')){Programmeinstellungen.gcodeoptions.endmoveYmax=ipe.getVal();}
 				if(ipe.getName()==getWort('showgrid')){Programmeinstellungen.drawoptions.showgrid=ipe.getVal();}
 			}
 			//save Programmeinstellungen
@@ -400,7 +453,7 @@ var electron_app=function(){
 			
 			//div=cE(node,"div",undefined,"linetop");
 			
-			gruppe=cE(werkznode,"article",undefined,"gruppe");
+			gruppe=cE(werkznode,"article");
 			//Blatt			
 			h1=cE(gruppe,"h1");
 			h1.innerHTML=getWort("Zeichenflaeche")+":";
@@ -421,13 +474,13 @@ var electron_app=function(){
 			inpZoom.addEventFunc(changeElemente);
 			
 			
-			//gruppe=cE(werkznode,"article",undefined,"gruppe");
+			//gruppe=cE(werkznode,"article");
 			//import/export
 			inpbutt=new inputElement(getWort('loadgcode'),'button',gruppe);
 			inpbutt.addEventFunc( function(v){if(zeichenfeld)zeichenfeld.importgcodesvg();} );
 			
 			
-			gruppe=cE(werkznode,"article",undefined,"gruppe");
+			gruppe=cE(werkznode,"article");
 			
 			//Helperlein
 			inpbutt=new inputElement(getWort('loadvorlage'),'button',gruppe);
@@ -443,7 +496,7 @@ var electron_app=function(){
 			inpbutt.addEventFunc( function(v){if(zeichenfeld)zeichenfeld.setVorlageTransparenz(v);} );
 			
 			
-			gruppe=cE(werkznode,"article",undefined,"gruppe");
+			gruppe=cE(werkznode,"article");
 			//Stift
 			inpStaerke=new inputElement(getWort('Strichstaerke'),'number',gruppe,getWort('mm'));
 			inpStaerke.setVal(0.5);
@@ -472,7 +525,7 @@ var electron_app=function(){
 			inpbutt.addEventFunc( function(v){if(zeichenfeld)zeichenfeld.optimizestrokes();} );
 			
 			
-			gruppe=cE(werkznode,"article",undefined,"gruppe");
+			gruppe=cE(werkznode,"article");
 			//Zeichnung actions: 
 			h1=cE(gruppe,"h1");
 			h1.innerHTML=getWort("moveto")+":";
@@ -507,56 +560,18 @@ var electron_app=function(){
 			
 			
 			
-			
-			
-			
-			gruppe=cE(werkznode,"article",undefined,"gruppe");
+			gruppe=cE(werkznode,"article");
 			h1=cE(gruppe,"h1");
-			h1.innerHTML=getWort("speichern")+":";
+			h1.innerHTML=getWort("controlandsave")+":";
 			
-			
-			inpbutt=new inputElement(getWort('servoUP'),'number',gruppe);//,'°'
-			inpbutt.setVal(Programmeinstellungen.gcodeoptions.servoUP);
-			inpbutt.setMinMaxStp(0,255);
-			inpbutt.addEventFunc(changeExportOptionen);
-			
-			inpbutt=new inputElement(getWort('servoUPwriting'),'number',gruppe);//,'°'
-			inpbutt.setVal(Programmeinstellungen.gcodeoptions.servoUPwriting);
-			inpbutt.setMinMaxStp(0,255);
-			inpbutt.addEventFunc(changeExportOptionen);
-			
-			inpbutt=new inputElement(getWort('servoDown'),'number',gruppe);//,'°'
-			inpbutt.setVal(Programmeinstellungen.gcodeoptions.servoDown);
-			inpbutt.setMinMaxStp(0,255);
-			inpbutt.addEventFunc(changeExportOptionen);
-			
-			inpbutt=new inputElement(getWort('servowaittime'),'number',gruppe,'ms');
-			inpbutt.setVal(Programmeinstellungen.gcodeoptions.servowaittime);
-			inpbutt.setMinMaxStp(0,1000);
-			inpbutt.addEventFunc(changeExportOptionen);
-			
-			inpbutt=new inputElement(getWort('movespeed'),'number',gruppe,'mm/min');
-			inpbutt.setVal(Programmeinstellungen.gcodeoptions.movespeed);
-			inpbutt.setMinMaxStp(500,5000);
-			inpbutt.addEventFunc(changeExportOptionen);
-			
-			inpbutt=new inputElement(getWort('drawspeed'),'number',gruppe,'mm/min');
-			inpbutt.setVal(Programmeinstellungen.gcodeoptions.drawspeed);
-			inpbutt.setMinMaxStp(500,5000);
-			inpbutt.addEventFunc(changeExportOptionen);
-			
-			
-			inpbutt=new inputElement(getWort('endmoveYmax'),'checkbox',gruppe);
-			inpbutt.setVal(Programmeinstellungen.gcodeoptions.endmoveYmax);
-			inpbutt.addEventFunc(changeExportOptionen);
-			
-			
-			
+			//gcode Einstellungen
+			inpbutt=new inputElement(getWort('einstllungengcode'),'button',gruppe);
+			inpbutt.addEventFunc( function(v){thedialog.showDialog('einstellungen');} );
+						
+			//Grafik Speichern als gcode oder svg
 			inpbutt=new inputElement(getWort('exportgcode'),'button',gruppe);
 			inpbutt.addEventFunc( function(v){if(zeichenfeld)zeichenfeld.exportgcode();} );
-			//exportoptions
 			
-			//
 			addClass(zielNode,"werkzeugeoffen");
 			refreshInputElemente();
 		}
@@ -665,14 +680,44 @@ var electron_app=function(){
 			getExportDateiname(inptDateiname);
 		}
 			
+		var parsegcodeopt=function(s,data){
+			if(s.indexOf("$sysinfo")>-1){
+				var datum=new Date();
+				s=s.split("$sysinfo").join("; "+datum);
+			}
+			if(s.indexOf("$movetoYmax")>-1){
+				if(data && data["$movetoYmax"]!=undefined)
+					s=s.split("$movetoYmax").join(data["$movetoYmax"]);
+				else
+					s=s.split("$movetoYmax").join("");
+			}			
+			if(s.indexOf("$movetoStart")>-1){
+				if(data && data["$movetoStart"]!=undefined)
+					s=s.split("$movetoStart").join(data["$movetoStart"]);
+				else
+					s=s.split("$movetoStart").join("");
+			}
+			s+="\n";
+			return s;
+		}
+			
 		var getDataAsGcode=function(){	
 			var lz,pz,p,linie,xx,yy;
 			var daten="; SplineWriter\n";
 			
+			/*
+			daten+="G21 ; set units to millimeters"+"\n";
+			daten+="G90 ; use absolute coordinates"+"\n";
+			daten+="\n";
+			*/
+			daten+=parsegcodeopt(Programmeinstellungen.gcodeoptionsV2.gcodeprestart); 
 			
-			var movespeed=Programmeinstellungen.gcodeoptions.movespeed;
-			var drawspeed=Programmeinstellungen.gcodeoptions.drawspeed;
-			var endmoveYmax=Programmeinstellungen.gcodeoptions.endmoveYmax;
+			
+			var movespeed=Programmeinstellungen.gcodeoptionsV2.movespeed;
+			var drawspeed=Programmeinstellungen.gcodeoptionsV2.drawspeed;
+			
+			var islaser=Programmeinstellungen.gcodeoptionsV2.gcodeLinienbegin.indexOf('M3')>-1;
+			
 			var yMul=1;
 			var xMul=1;
 			var yVersatz=0;//mm
@@ -701,21 +746,11 @@ var electron_app=function(){
 				xVersatz=werkzeuge.get("width");
 			}
 			
-			daten+="G21 ; set units to millimeters"+"\n";
-			daten+="G90 ; use absolute coordinates"+"\n";
-			daten+="\n";
 			
-			daten+="M400 ; wait\n";// warten bis zuende bewegt
-			daten+="; servo up"+"\n";
-			daten+="M280 ";// M280 P0 S100 
-			daten+=Programmeinstellungen.gcodeoptions.servoport+" ";
-			daten+="S"+Programmeinstellungen.gcodeoptions.servoUP+"\n";
 			
-			if(Programmeinstellungen.gcodeoptions.servowaittime>0)daten+="G4 P"+Programmeinstellungen.gcodeoptions.servowaittime+"\n\n";//wait ms
+			daten+=parsegcodeopt(Programmeinstellungen.gcodeoptionsV2.gcodestart);
 			
-			/* 
-			G1 X71.874 Y58.418 F1800.000
-			*/
+			
 			
 			for(lz=0;lz<zeichnung.length;lz++){
 				linie=zeichnung[lz];
@@ -730,59 +765,38 @@ var electron_app=function(){
 					
 					if(pz==0){
 						//moveTo
-						daten+= "G1 X"+xx+" Y"+yy+" F"+movespeed +"\n";
-						//+servo down
-						daten+="M400 ; wait\n";// warten bis zuende bewegt
-						daten+="; servo down" +"\n";
-						daten+="M280 ";// M280 P1 S50 
-						daten+=Programmeinstellungen.gcodeoptions.servoport+" ";
-						daten+="S"+Programmeinstellungen.gcodeoptions.servoDown+"\n";
-						if(Programmeinstellungen.gcodeoptions.servowaittime>0)daten+="G4 P"+Programmeinstellungen.gcodeoptions.servowaittime+"\n";
-			
+						daten+= "G1 X"+xx+" Y"+yy+" F"+movespeed;
+						//if(islaser)daten+=" S0";//grbl = Frequenz
+						daten+="\n";
+						
+						//Servo down/Laser an
+						daten+=parsegcodeopt(Programmeinstellungen.gcodeoptionsV2.gcodeLinienbegin);
 					}
-					else
-					if(pz==1)
-							daten+="G1 X"+xx+" Y"+yy+" F"+drawspeed  +"\n";
-						else
-							daten+="G1 X"+xx+" Y"+yy +"\n";
-					
+					else{
+						if(pz==1)
+								daten+="G1 X"+xx+" Y"+yy+" F"+drawspeed;
+							else
+								daten+="G1 X"+xx+" Y"+yy;
+						
+						//if(islaser)daten+=" S1000";//grbl = Frequenz
+						daten+="\n";
+					}
 				}
 				if(linie.length>0){
-					//+servo up
-					daten+="M400 ; wait\n";// warten bis zuende bewegt
-					daten+="; servo up"+"\n";
-					
-					daten+="M280 ";// M280 P1 S50 
-					daten+=Programmeinstellungen.gcodeoptions.servoport+" ";
-					daten+="S"+Programmeinstellungen.gcodeoptions.servoUPwriting+"\n";
-					if(Programmeinstellungen.gcodeoptions.servowaittime>0)daten+="G4 P"+Programmeinstellungen.gcodeoptions.servowaittime+"\n\n";
+					//Servo up; Laser Off
+					daten+=parsegcodeopt(Programmeinstellungen.gcodeoptionsV2.gcodeLinienende);
 				}
 			}
-						
-			daten+="; servo up"+"\n";// M280 P0 Sxxx
-			daten+="M280 ";
-			daten+=Programmeinstellungen.gcodeoptions.servoport+" ";
-			daten+="S"+Math.floor(Programmeinstellungen.gcodeoptions.servoUP*0.85)+"\n";
 			
-			if(Programmeinstellungen.gcodeoptions.servowaittime>0)daten+="G4 P"+Programmeinstellungen.gcodeoptions.servowaittime+"\n\n";//wait
-			
-			daten+="; servo up"+"\n";// M280 P0 S83 
-			daten+="M280 ";
-			daten+=Programmeinstellungen.gcodeoptions.servoport+" ";
-			daten+="S"+Programmeinstellungen.gcodeoptions.servoUP+"\n";
-			
-			if(Programmeinstellungen.gcodeoptions.servowaittime>0)daten+="G4 P"+Programmeinstellungen.gcodeoptions.servowaittime+"\n\n";//wait
-			
-			
-			if(endmoveYmax)
-				daten+="G1 X0 Y"+maxYY+" F"+movespeed;//move to 0,0
-				else
-				daten+="G1 X0 Y0 F"+movespeed;//move to 0,0
-			
-			daten+="\n";
-			daten+=Programmeinstellungen.gcodeoptions.endcode;
-			daten+="\n";
-			
+			daten+=parsegcodeopt(Programmeinstellungen.gcodeoptionsV2.gcodeende,
+							{
+							 '$movetoYmax'	:"G1 X0 Y"+maxYY+" F"+movespeed,
+							 '$movetoStart'	:"G1 X0 Y0 F"+movespeed
+							}
+							);
+							
+			daten+="\n";			
+			daten+=";Projektpage: https://github.com/polygontwist/splinewriter";			
 			return daten;			
 		}
 		
@@ -1117,7 +1131,7 @@ var electron_app=function(){
 		
 		var keydown=function(e){
 			
-			if(e.keyCode==90 && e.ctrlKey){
+			if(e.keyCode==90 && e.ctrlKey){//strg+z
 				_this.dellaststroke();
 				e.preventDefault(); 
 			}
@@ -1569,11 +1583,11 @@ var electron_app=function(){
 			Programmeinstellungen.dateiio.lastdateiname=fileName;
 			setLadebalken(0);
 			if(calcytimer!=undefined)clearTimeout(calcytimer);
-			var i,t,linie,s,bef,value,p,sval,
+			var i,t,linie,s,zeile,bef,value,p,sval,
 				xx=0,
 				yy=0,
 				zz=0,
-				staerke=0,//"S123"
+				staerke=1000,//"S123" optional
 				feedrate=0,
 				ee;
 			
@@ -1599,15 +1613,20 @@ var electron_app=function(){
 			var daten=fs.readFileSync(fileName, 'utf8');
 			
 			var dlist=daten.split('\n');
+//TODO: freie gcodes -> Erkennung anpassen ? (Linienfarbe = ServoNr ?)
 			for(i=0;i<dlist.length;i++){
+				zeile=dlist[i].split('\n').join('');
+				zeile=zeile.split('\r').join('');
+				zeile=zeile.toUpperCase().split(';')[0].split(' ').join('')+';';
+				
 				s=dlist[i].split(';')[0].toUpperCase().split(" ");
 				//console.log(s);
 				setLadebalken(100/dlist.length*i);
+			
+				if(s[0]=="G90" || zeile.indexOf("G90;")==0){} //absolute Position
 				
-				if(s[0]=="G90"){} //absolute Position
-				
-				if(s[0]=="G20")factorToMM=25.4; //inch to mm
-				if(s[0]=="G21")factorToMM=1; 	//mm
+				if(s[0]=="G20" || zeile.indexOf("G20;")==0)factorToMM=25.4; //inch to mm
+				if(s[0]=="G21" || zeile.indexOf("G21;")==0)factorToMM=1; 	//mm
 				
 				if(s[0]=="M280"){//Servo
 					for(t=1;t<s.length;t++){// M280 P0 S110
@@ -1617,8 +1636,8 @@ var electron_app=function(){
 						if(bef.indexOf('P')==0){}//Servoport
 						
 						if(bef.indexOf('S')==0){//Position (0=down)
-							if(value==Programmeinstellungen.gcodeoptions.servoDown){//0 new Line
-								linie=[];
+							if(value==0){//Programmeinstellungen.gcodeoptions.servoDown-ist immer 0
+								linie=[];// new Line
 								linie.push({x:xx,y:yy,px:0,py:0});//Ausgangspunkt
 								isline=true;
 							}else{//UP
@@ -1639,13 +1658,16 @@ var electron_app=function(){
 					}
 				}
 				
-				if(s[0]=="M3" || s[0]=="M4"){//Spindle On, Clockwise|Counter-Clockwise
-					isLaser=true;
+				if(s[0]=="M3" || s[0]=="M4"
+						|| zeile.indexOf("M3;")==0
+						|| zeile.indexOf("M4;")==0
+					){//Spindle On, Clockwise|Counter-Clockwise
+					isLaser=true;		
 					isline=true;
 					linie=[];
 					linie.push({x:xx,y:yy,px:0,py:0});//add Point, aktuelle Position
 				}
-				if(s[0]=="M5"){//Spindle Off
+				if(s[0]=="M5" || zeile.indexOf("M5;")==0){//Spindle Off
 					isLaser=true;
 					isline=false;
 					if(linie.length>1)zeichnung.push(linie);
@@ -2103,7 +2125,7 @@ var electron_app=function(){
 		}
 	}
 	
-	var inputElement=function(caption,typ,ziel,sEinheit){
+	var inputElement=function(caption,typ,ziel,sEinheit,addtolist){
 		var _this=this;
 		var input;
 		var blockdiv;
@@ -2114,6 +2136,8 @@ var electron_app=function(){
 		var basiselement=undefined;
 		
 		var fchange=undefined;
+		var lokaldata=undefined;
+		if(addtolist==undefined)addtolist=true;
 		
 		//--api--
 		this.setMinMaxStp=function(min,max,step){
@@ -2132,6 +2156,11 @@ var electron_app=function(){
 		this.getName=function(){return caption;}
 		
 		this.setVal=function(val){
+			if(input.type=="textarea"){
+				input.innerHTML=val;
+				input.value=val;
+			}				
+			else
 			if(input.type=="checkbox")
 				input.checked=val;
 				else
@@ -2154,6 +2183,8 @@ var electron_app=function(){
 			fchange=func;
 		}
 		
+		this.setdata=function(daten){lokaldata=daten;}
+		this.getdata=function(){return lokaldata;}
 		
 		//--action--
 		var inpchange=function(e){
@@ -2165,7 +2196,13 @@ var electron_app=function(){
 			if(sendetimer!=undefined)clearTimeout(sendetimer);
 			
 			if(senden && fchange!=undefined)
-				sendetimer=setTimeout(function(){fchange(input.value)},valsendenin);
+				sendetimer=setTimeout(function(){
+						if(lokaldata==undefined)
+								fchange(input.value);
+							else
+								fchange(lokaldata);
+					},valsendenin);
+			e.preventDefault();//return false;
 		}
 		
 		//--ini--
@@ -2185,20 +2222,25 @@ var electron_app=function(){
 			
 			
 			if(typ!="button"){
-				label=cE(blockdiv,"label");
-				label.innerHTML=caption+':';
-				addClass(label,"labeltext");
+				if(caption!=undefined){
+					label=cE(blockdiv,"label");
+					label.innerHTML=caption+':';
+					addClass(label,"labeltext");
+				}
 			}			
 			
-			input=cE(blockdiv,"input",iid);
+			if(typ=="textarea")
+				input=cE(blockdiv,typ,iid);		//textbox
+				else{
+				input=cE(blockdiv,"input",iid);
+				input.type=typ;
+				}
+			
 			if(typ=="button"  ){
 				input.value=caption;
-				
 			}
 			if(basiselement==undefined)basiselement=input;
-				
-			
-			input.type=typ;
+							
 			if(typ=="button"){
 				//addClass(input,"button");
 				input.addEventListener('click',inpchange);
@@ -2218,19 +2260,208 @@ var electron_app=function(){
 			if(typ=="range"){
 				valsendenin=10;
 			}
+						
 			
 			if(sEinheit!=undefined){
 				span=cE(blockdiv,"span",undefined,"einheit");
 				span.innerHTML=sEinheit;				
 			}
 			
-			inpElementeList.push(_this);
+			if(addtolist===true)inpElementeList.push(_this);
 		}
 		
 		create();
 	}
 	
-
+	//--Dialoge--
+	var oDialog=function(){
+		var dialognode;
+		var dialogtitelnode;
+		var dialogtitelbutt;
+		var dialogcontentnode;
+		var dialogaktiv=undefined;
+		var _this=this;
+		
+		var closeDialog=function(e){
+			_this.showDialog();
+			e.preventDefault();//return false
+		}
+		
+		var create=function(){
+			dialognode=cE(zielNode,"div","dialog");
+			dialogtitelnode		=cE(dialognode,"h1","dialogtitel");
+			dialogtitelbutt		=cE(dialognode,"div","dialogtitelbutt");
+			dialogcontentnode	=cE(dialognode,"div","dialogcontent");
+			
+			var node=cE(dialogtitelbutt,"a",undefined,"closebutton");
+			node.href="#";
+			node.innerHTML="X";
+			node.addEventListener('click',closeDialog);
+			node.title=getWort("buttclose");
+			
+			_this.showDialog();
+		}
+		
+		var settitel=function(titeltext){
+			dialogtitelnode.innerHTML=getWort(titeltext);
+		}
+		
+		this.showDialog=function(dialogtyp){
+			if(dialogtyp==undefined || dialogtyp==""){
+				addClass(dialognode,"unsichtbar");
+				if(dialogaktiv)dialogaktiv.destroy();
+				return;
+			}
+			
+			settitel('titel_'+dialogtyp);
+			
+			if(dialogtyp=="einstellungen"){
+				dialogaktiv=new dialogEinstellungen(dialogcontentnode);
+			}
+			delClass(dialognode,"unsichtbar");
+		}
+		create();
+	}
+	
+	var dialogEinstellungen=function(zielnode){
+		var vorlageninputgruppe;
+		
+		var input_gcodeprestart,
+			input_gcodestart,
+			input_gcodeLinienbegin,
+			input_gcodeLinienende,
+			input_gcodeende,
+			inpbutt_drawspeed,
+			inpbutt_movespeed;
+		
+		this.destroy=function(){}
+		
+		var changegcodeElemente=function(v){
+			Programmeinstellungen.gcodeoptionsV2[v.id]=v.node.getVal();
+			saveSettings();
+		};
+		
+		var create=function(){
+			zielnode.innerHTML="";
+			var gruppe,table,tr,td,node,inpbutt;
+			
+			
+			//Vorlagen: plotter, Laser:  name-load-del
+			// 
+			gruppe=cE(zielnode,"article","vorlagenwahl");
+			vorlagenauswahl(gruppe);
+			
+			vorlageninputgruppe=cE(zielnode,"article");
+			table=cE(vorlageninputgruppe,"table",undefined,"gcodinputtabelle");
+			
+			input_gcodeprestart=new inputElement(getWort('gcodeprestart'),'textarea',table,undefined,false);
+			input_gcodeprestart.setClass('inputtextfeld');
+			input_gcodeprestart.setVal(Programmeinstellungen.gcodeoptionsV2.gcodeprestart);
+			input_gcodeprestart.setdata({"node":input_gcodeprestart,"id":"gcodeprestart"});
+			input_gcodeprestart.addEventFunc(changegcodeElemente);
+			
+			input_gcodestart=new inputElement(getWort('gcodestart'),'textarea',table,undefined,false);
+			input_gcodestart.setClass('inputtextfeld');
+			input_gcodestart.setVal(Programmeinstellungen.gcodeoptionsV2.gcodestart);
+			input_gcodestart.setdata({"node":input_gcodestart,"id":"gcodestart"});
+			input_gcodestart.addEventFunc(changegcodeElemente);
+			
+			input_gcodeLinienbegin=new inputElement(getWort('gcodeLinienbegin'),'textarea',table,undefined,false);
+			input_gcodeLinienbegin.setClass('inputtextfeld');
+			input_gcodeLinienbegin.setVal(Programmeinstellungen.gcodeoptionsV2.gcodeLinienbegin);
+			input_gcodeLinienbegin.setdata({"node":input_gcodeLinienbegin,"id":"gcodeLinienbegin"});
+			input_gcodeLinienbegin.addEventFunc(changegcodeElemente);
+			
+			input_gcodeLinienende=new inputElement(getWort('gcodeLinienende'),'textarea',table,undefined,false);
+			input_gcodeLinienende.setClass('inputtextfeld');
+			input_gcodeLinienende.setVal(Programmeinstellungen.gcodeoptionsV2.gcodeLinienende);
+			input_gcodeLinienende.setdata({"node":input_gcodeLinienende,"id":"gcodeLinienende"});
+			input_gcodeLinienende.addEventFunc(changegcodeElemente);
+			
+			input_gcodeende=new inputElement(getWort('gcodeende'),'textarea',table,undefined,false);
+			input_gcodeende.setClass('inputtextfeld');
+			input_gcodeende.setVal(Programmeinstellungen.gcodeoptionsV2.gcodeende);
+			input_gcodeende.setdata({"node":input_gcodeende,"id":"gcodeende"});
+			input_gcodeende.addEventFunc(changegcodeElemente);
+			
+			vorlageninputgruppe=cE(zielnode,"article",undefined,"input2");
+			inpbutt_movespeed=new inputElement(getWort('movespeed'),'number',vorlageninputgruppe,'mm/min',false);
+			inpbutt_movespeed.setVal(Programmeinstellungen.gcodeoptionsV2.movespeed);
+			inpbutt_movespeed.setMinMaxStp(500,5000);
+			inpbutt_movespeed.setdata({"node":inpbutt_movespeed,"id":"movespeed"});
+			inpbutt_movespeed.addEventFunc(changegcodeElemente);
+		
+			inpbutt_drawspeed=new inputElement(getWort('drawspeed'),'number',vorlageninputgruppe,'mm/min',false);
+			inpbutt_drawspeed.setVal(Programmeinstellungen.gcodeoptionsV2.drawspeed);
+			inpbutt_drawspeed.setMinMaxStp(500,5000);
+			inpbutt_drawspeed.setdata({"node":inpbutt_movespeed,"id":"drawspeed"});
+			inpbutt_drawspeed.addEventFunc(changegcodeElemente);
+			
+			
+			gruppe=cE(zielnode,"article");
+			node=cE(gruppe,"p");
+			node.innerHTML=getWort("gcodeplatzhaltertext");
+			
+			//TODO:
+			//als Vorlage speichern
+			//-> Programmeinstellungen.gcodeoptionsV2 ...
+		}
+		
+		var setdatenvonvorlage=function(data){
+			console.log(data);		
+			input_gcodeprestart.setVal(data.daten.gcodeprestart);
+			input_gcodestart.setVal(data.daten.gcodestart);
+			input_gcodeLinienbegin.setVal(data.daten.gcodeLinienbegin);
+			input_gcodeLinienende.setVal(data.daten.gcodeLinienende);
+			input_gcodeende.setVal(data.daten.gcodeende);
+			inpbutt_drawspeed.setVal(data.daten.drawspeed);
+			inpbutt_movespeed.setVal(data.daten.movespeed);
+			
+			Programmeinstellungen.gcodeoptionsV2.gcodeprestart=data.daten.gcodeprestart;
+			Programmeinstellungen.gcodeoptionsV2.gcodestart=data.daten.gcodestart;
+			Programmeinstellungen.gcodeoptionsV2.gcodeLinienbegin=data.daten.gcodeLinienbegin;
+			Programmeinstellungen.gcodeoptionsV2.gcodeLinienende=data.daten.gcodeLinienende;
+			Programmeinstellungen.gcodeoptionsV2.drawspeed=data.daten.drawspeed;
+			Programmeinstellungen.gcodeoptionsV2.movespeed=data.daten.movespeed;
+			saveSettings();
+			
+		}
+		
+		var delvorlage=function(data){
+			var i,nr=data.nr;
+			var newliste=[];
+			for(i=0;i<Programmeinstellungen.gcodevorlagen.length;i++){
+				if(i!=nr)newliste.push(Programmeinstellungen.gcodevorlagen[i]);
+			}
+			Programmeinstellungen.gcodevorlagen=newliste;
+			saveSettingsNow();
+			create();
+		}
+		
+		var vorlagenauswahl=function(ziel){
+			var i,datavorlage,node,ul,li,inpbutt;
+			//nodeinput=new inputElement('','liste',ziel,'');
+			ul=cE(ziel,"ul");
+			for(i=0;i<Programmeinstellungen.gcodevorlagen.length;i++){
+				datavorlage=Programmeinstellungen.gcodevorlagen[i];
+				li=cE(ul,'li');
+				node=cE(li,'span');
+				node.innerHTML=datavorlage.name;
+				
+				inpbutt=new inputElement(getWort('loadvorlage'),'button',li);
+				inpbutt.setdata({nr:i,daten:datavorlage});
+				inpbutt.addEventFunc( function(v){setdatenvonvorlage(v);});
+			
+				if(!(datavorlage.erasable===false)){
+					inpbutt=new inputElement(getWort('deletevorlage'),'button',li);
+					inpbutt.setdata({nr:i,daten:datavorlage});
+					inpbutt.addEventFunc( function(v){delvorlage(v);});
+				}
+			}
+		}
+		
+		create();
+	}
 
 }
 
