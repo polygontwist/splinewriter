@@ -23,8 +23,8 @@ Ich benutze "Marlin 1.1.0-RC6" auf einem Rumba-Board (https://www.instagram.com/
 * v0.0.8: Switch added to display the grid
 * v0.0.9: fix Scalierungsfehler
 * v0.1.0: die Zeichenfläche läßt sich vergrößern
-* v0.1.1: Linien können so sortiert werden, das die leerfahrten reduziert werden. Punkteanzeige wird der 1.Punkt rot und die restlichen orange gefärbt.
-* v0.1.2: gcode Einstellungen in Dialog ausgelagert, mit Möglichkeit je nach eigener Maschiene Eintellungen vorzunehmen (z.B: für Laser statt Plotter)
+* v0.1.1: Linien können so sortiert werden, das die Leerfahrten reduziert werden. Punkteanzeige wird der 1.Punkt rot und die restlichen orange gefärbt.
+* v0.1.2: gcode Einstellungen in Dialog ausgelagert, mit Möglichkeit je nach eigener Maschine Eintellungen vorzunehmen (z.B: für Laser statt Plotter)
 
 # Programm benutzen
 Für Windows-Nutzer liegt eine fertige Instalation im Ordner "dist".
