@@ -6,10 +6,11 @@ Ich brauchte ein Programm mit dem man Zeichnungen erstellen/konvertieren kann, u
 
 Die Zeichnungen können im gcode-Format oder als SVG gespeichert werden. Mann kann also gcode nach svg und umgekehrt konvertieren (gcodetosvg, svgtogcode).
 
-Es können, neben gcode, auch SVG-Gafiken geladen werden. In den SVG-Grafiken müssen die Linien in "pfad"- oder "polyline"-Tags angelegt sein, andere Tags können nicht ausgewertet werden.
+Es können, neben gcode, auch SVG-Gafiken geladen werden. In den SVG-Grafiken müssen die Linien in "pfad"-, "line"- oder "polyline"-Tags angelegt sein, andere Tags werde nicht ausgewertet.
 
-Für die Ausführung ist ein Gerät mit Marlin-Firmeware von Nöten, das ein Servo für den Stifthalter benutzt.
+Für die Ausführung ist ein Gerät mit Marlin-Firmeware ausgelegt, das ein Servo für den Stifthalter benutzt.
 Ich benutze "Marlin 1.1.0-RC6" auf einem Rumba-Board (https://www.instagram.com/p/BZHirZBgRO-/ https://www.instagram.com/p/BY3j2lXDd58/).
+Ab der Version v0.1.2 ist die gcode-Ausgabe soweit anpassbar, das man auch einen Laser als Ausgabegerät nutzen kann. Vorlagen sind im Programm enthalten.
 
 ![Beispiel](https://github.com/polygontwist/splinewriter/blob/master/exampel/tiger.jpg)
 
