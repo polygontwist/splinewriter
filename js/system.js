@@ -68,7 +68,7 @@ var electron_app=function(){
 			}
 			,		
 			{	"name":"Laser",
-				"erasable":true,
+				"erasable":false,
 				"gcodeprestart":	";$sysinfo\nG90 ;absolute Position\nM08 ;Flood Coolant On\nG21 ; set units to millimeters\n\n",//Zeilenumbruch mit "\n"
 				"gcodestart":		"",
 				"gcodeLinienbegin":	"M3",
@@ -2174,6 +2174,8 @@ var electron_app=function(){
 				return input.value;
 		}
 		
+		this.getContainer=function(){return blockdiv;}
+		
 		this.setClass=function(c){
 			basiselement.className=c;
 			//addClass(blockdiv,c);
@@ -2210,7 +2212,7 @@ var electron_app=function(){
 			var label,span,inpElementeNr=inpElementeList.length;
 			var iid='input_'+typ+'_'+inpElementeNr;
 			
-						
+			if(addtolist===false)iid=undefined;
 			
 			if(sEinheit!=undefined || typ!="button"){
 				blockdiv=cE(ziel,"div");
@@ -2332,7 +2334,9 @@ var electron_app=function(){
 			input_gcodeLinienende,
 			input_gcodeende,
 			inpbutt_drawspeed,
-			inpbutt_movespeed;
+			inpbutt_movespeed,
+			inpbutt_vorlagenname,
+			zielliste;
 		
 		this.destroy=function(){}
 		
@@ -2341,6 +2345,27 @@ var electron_app=function(){
 			saveSettings();
 		};
 		
+		var addToVorlage=function(){
+			var neueVorlage={
+				"name":				inpbutt_vorlagenname.getVal(),
+				"erasable":true,
+				"gcodeprestart":	input_gcodeprestart.getVal(),
+				"gcodestart":		input_gcodestart.getVal(),
+				"gcodeLinienbegin":	input_gcodeLinienbegin.getVal(),
+				"gcodeLinienende":	input_gcodeLinienende.getVal(),
+				"gcodeende":		input_gcodeende.getVal(),
+				"movespeed":		inpbutt_drawspeed.getVal(),	//max F5000
+				"drawspeed":		inpbutt_movespeed.getVal()		//max F5000				
+			}
+			Programmeinstellungen.gcodevorlagen.push(neueVorlage);
+			
+			vorlagenauswahl(zielliste);
+			
+			inpbutt_vorlagenname.setVal("Vorlage "+Programmeinstellungen.gcodevorlagen.length);
+			
+			saveSettings();
+		}
+		
 		var create=function(){
 			zielnode.innerHTML="";
 			var gruppe,table,tr,td,node,inpbutt;
@@ -2348,8 +2373,8 @@ var electron_app=function(){
 			
 			//Vorlagen: plotter, Laser:  name-load-del
 			// 
-			gruppe=cE(zielnode,"article","vorlagenwahl");
-			vorlagenauswahl(gruppe);
+			zielliste=cE(zielnode,"article","vorlagenwahl");
+			vorlagenauswahl(zielliste);
 			
 			vorlageninputgruppe=cE(zielnode,"article");
 			table=cE(vorlageninputgruppe,"table",undefined,"gcodinputtabelle");
@@ -2398,6 +2423,16 @@ var electron_app=function(){
 			inpbutt_drawspeed.addEventFunc(changegcodeElemente);
 			
 			
+			
+			inpbutt_vorlagenname=new inputElement(getWort('vorlagenname'),'text',vorlageninputgruppe,undefined,false);
+			inpbutt_vorlagenname.setVal("Vorlage "+Programmeinstellungen.gcodevorlagen.length);
+			inpbutt_vorlagenname.addEventFunc(function(v){});
+			
+			
+			inpbutt=new inputElement(getWort('addtovorlage'),'button',inpbutt_vorlagenname.getContainer(),undefined,false);
+			inpbutt.addEventFunc(function(v){addToVorlage()});
+			
+			
 			gruppe=cE(zielnode,"article");
 			node=cE(gruppe,"p");
 			node.innerHTML=getWort("gcodeplatzhaltertext");
@@ -2441,6 +2476,7 @@ var electron_app=function(){
 		var vorlagenauswahl=function(ziel){
 			var i,datavorlage,node,ul,li,inpbutt;
 			//nodeinput=new inputElement('','liste',ziel,'');
+			ziel.innerHTML="";
 			ul=cE(ziel,"ul");
 			for(i=0;i<Programmeinstellungen.gcodevorlagen.length;i++){
 				datavorlage=Programmeinstellungen.gcodevorlagen[i];
@@ -2448,12 +2484,12 @@ var electron_app=function(){
 				node=cE(li,'span');
 				node.innerHTML=datavorlage.name;
 				
-				inpbutt=new inputElement(getWort('loadvorlage'),'button',li);
+				inpbutt=new inputElement(getWort('loadvorlage'),'button',li,undefined,false);
 				inpbutt.setdata({nr:i,daten:datavorlage});
 				inpbutt.addEventFunc( function(v){setdatenvonvorlage(v);});
 			
 				if(!(datavorlage.erasable===false)){
-					inpbutt=new inputElement(getWort('deletevorlage'),'button',li);
+					inpbutt=new inputElement(getWort('deletevorlage'),'button',li,undefined,false);
 					inpbutt.setdata({nr:i,daten:datavorlage});
 					inpbutt.addEventFunc( function(v){delvorlage(v);});
 				}

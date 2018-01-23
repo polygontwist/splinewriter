@@ -54,6 +54,8 @@ var sprachen=[
 		"gcodeende": 		"gcode wenn Programm endet",
 		"movespeed":"Geschwindigkeit Werkzeug bewegen",
 		"drawspeed":"Geschwindigkeit Werkzeug zeichnet Linie",
+		"vorlagenname":"Vorlagenname",
+		"addtovorlage":"Vorlage merken",
 		
 		"gcodeplatzhaltertext":"Mit Platzhalter können Datenabhängige Daten eingefügt werden:<br><b>$sysinfo</b> allgemeine Infos eingefügen<br><b>$movetoYmax</b> Code der das Werkzeug nach Beendigung der Grafik an die maximale benutzte Y-Position fährt<br><b>$moveto00</b> Code der das Werkzeug nach Beendigung der Grafik an Position 0/0 fährt<br>alles nach <b>;</b> sind Kommentare"
 		}
@@ -110,6 +112,8 @@ var sprachen=[
 		"gcodeende": 		"gcode when program ends",
 		"movespeed":"movespeed",
 		"drawspeed":"drawspeed",
+		"vorlagenname":"template name",
+		"addtovorlage":"Remember template",
 		
 		"gcodeplatzhaltertext":"With placeholder data-dependent data can be inserted: <br> <b> $ sysinfo </ b> general information inserted <br> <b> $ movetoYmax </ b> Code that moves the tool to the maximum used Y-position<br> everything after <b>; </ b> are comments"
 	 }
