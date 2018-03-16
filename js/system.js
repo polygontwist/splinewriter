@@ -2247,6 +2247,9 @@ var electron_app=function(){
 				//addClass(input,"button");
 				input.addEventListener('click',inpchange);
 				valsendenin=1;
+			}else
+			if(typ=="range"){
+				input.addEventListener('change',inpchange);
 			}else{
 				input.addEventListener('change',inpchange);
 				input.addEventListener('keyup',inpchange);
