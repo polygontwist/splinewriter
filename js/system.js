@@ -4,6 +4,8 @@
 	
 	alle Maße in mm
 	
+	showDevTools: //strg+d
+	
 	TODO: 
 	-wechsel der Spache
 	-farbige Linien -> gcode Select Tool? "; color:#rrggbb" M280 P0 S0  P=Servonr.
@@ -102,6 +104,9 @@ var electron_app=function(){
 		},
 		dateiio:{
 			"lastdateiname":""
+		},
+		importoptionen:{
+			"genauigkeit":100
 		}
 	};
 	
@@ -479,6 +484,9 @@ var electron_app=function(){
 			inpbutt=new inputElement(getWort('loadgcode'),'button',gruppe);
 			inpbutt.addEventFunc( function(v){if(zeichenfeld)zeichenfeld.importgcodesvg();} );
 			
+			inpbutt=new inputElement(getWort('importoption'),'button',gruppe);
+			inpbutt.addEventFunc( function(v){ thedialog.showDialog('importeinstellungen'); } );//
+			
 			
 			gruppe=cE(werkznode,"article");
 			
@@ -610,6 +618,13 @@ var electron_app=function(){
 		
 		//--API--
 		this.getLineCount=function(){return zeichnung.length;}
+		this.getPointCount=function(){
+			var i,re=0;
+			for(i=0;i<zeichnung.length;i++){
+				re+=zeichnung[i].length;
+			}
+			return re;
+			}
 		
 		this.resize=function(){
 			resizeZF();
@@ -2034,6 +2049,8 @@ var electron_app=function(){
 						resizeZF();
 						setLadebalken(-1);
 						calcfunnr=4;
+						
+						console.log("Linien",_this.getLineCount(),"Punkte",_this.getPointCount());
 					}
 					
 					if(calcfunnr<4){
@@ -2134,8 +2151,10 @@ var electron_app=function(){
 		var sendetimer=undefined;
 		var valsendenin=250;//ms
 		var basiselement=undefined;
+		var showvalueinunity=false;
+		var einheitnode=undefined;
 		
-		var fchange=undefined;
+		var fchange=[];
 		var lokaldata=undefined;
 		if(addtolist==undefined)addtolist=true;
 		
@@ -2182,7 +2201,17 @@ var electron_app=function(){
 		}
 		
 		this.addEventFunc=function(func){
-			fchange=func;
+			fchange.push(func);
+		}
+		
+		this.showValueInEinheit=function(b){
+			showvalueinunity=b;
+			if(sEinheit!=undefined){
+				if(showvalueinunity)
+					einheitnode.innerHTML=_this.getVal()+sEinheit;
+					else
+					einheitnode.innerHTML=sEinheit;
+			}
 		}
 		
 		this.setdata=function(daten){lokaldata=daten;}
@@ -2197,13 +2226,20 @@ var electron_app=function(){
 			
 			if(sendetimer!=undefined)clearTimeout(sendetimer);
 			
-			if(senden && fchange!=undefined)
+			if(senden && fchange.length>0)
 				sendetimer=setTimeout(function(){
-						if(lokaldata==undefined)
-								fchange(input.value);
-							else
-								fchange(lokaldata);
+						var i;
+						for(i=0;i<fchange.length;i++){
+							if(lokaldata==undefined)
+									fchange[i](input.value);
+								else
+									fchange[i](lokaldata);
+						}
+							
 					},valsendenin);
+			
+			_this.showValueInEinheit(showvalueinunity);
+			
 			e.preventDefault();//return false;
 		}
 		
@@ -2268,8 +2304,8 @@ var electron_app=function(){
 						
 			
 			if(sEinheit!=undefined){
-				span=cE(blockdiv,"span",undefined,"einheit");
-				span.innerHTML=sEinheit;				
+				einheitnode=cE(blockdiv,"span",undefined,"einheit");
+				einheitnode.innerHTML=sEinheit;
 			}
 			
 			if(addtolist===true)inpElementeList.push(_this);
@@ -2322,6 +2358,9 @@ var electron_app=function(){
 			
 			if(dialogtyp=="einstellungen"){
 				dialogaktiv=new dialogEinstellungen(dialogcontentnode);
+			}
+			if(dialogtyp=="importeinstellungen"){
+				dialogaktiv=new dialogImport(dialogcontentnode);
 			}
 			delClass(dialognode,"unsichtbar");
 		}
@@ -2502,6 +2541,49 @@ var electron_app=function(){
 		create();
 	}
 
+	var dialogImport=function(zielnode){
+		var input_genauigkeit;
+		
+		var changegenauigkeit=function(v){
+			var val=parseFloat(v.node.getVal());
+			Programmeinstellungen.importoptionen[v.id]=val;
+			
+			val=(100-val)/100;											//100%..0%
+			Programmeinstellungen.drawoptions.abweichung=2+4*val;		//  2...6
+			Programmeinstellungen.drawoptions.abstandmin=0.2+0.6*val;	//0.2...0.8
+			Programmeinstellungen.drawoptions.grobabweichung=20+60*val; // 20...80
+			saveSettings();
+		}
+		/*var changeElementeValue=function(v){
+			Programmeinstellungen.importoptionen[v.id]=val;
+			saveSettings();
+		}*/
+		this.destroy=function(){}
+		
+		var create=function(){
+			zielnode.innerHTML="";
+			var gruppe,table,tr,td,node,inpbutt;
+			
+			gruppe=cE(zielnode,"article",undefined,"importoption");
+			
+			input_genauigkeit=new inputElement(getWort('genauiggkeit'),'range',gruppe,"%",false);
+			input_genauigkeit.setMinMaxStp(0,100,1);
+			input_genauigkeit.setdata({"node":input_genauigkeit,"id":"genauigkeit"});
+			input_genauigkeit.setVal(Programmeinstellungen.importoptionen.genauigkeit);
+			input_genauigkeit.showValueInEinheit(true);
+			input_genauigkeit.addEventFunc(changegenauigkeit);
+			//input_genauigkeit.addEventFunc(changeElementeValue);
+			
+			gruppe=cE(zielnode,"article");
+			node=cE(gruppe,"p");
+			node.innerHTML=getWort("text_importeinstellungen");
+			
+		}
+		
+		
+		create();
+	}
+	
 }
 
 //Start nach dem Laden

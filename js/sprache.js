@@ -33,7 +33,9 @@ var sprachen=[
 		"clearZeichnung":"Zeichnung löschen",
 		"dellaststroke":"letzten Strich löschen (strg+z)",
 		"loadgcode":"Grafik laden",
-
+		"importoption":"Importoptionen",
+		"genauiggkeit":"Genauiggkeit",
+		
 		"speichern":"Speicheroptionen",
 		"exportgcode":"speichern",
 		
@@ -57,7 +59,10 @@ var sprachen=[
 		"vorlagenname":"Vorlagenname",
 		"addtovorlage":"Vorlage merken",
 		
-		"gcodeplatzhaltertext":"Mit Platzhalter können Datenabhängige Daten eingefügt werden:<br><b>$sysinfo</b> allgemeine Infos eingefügen<br><b>$movetoYmax</b> Code der das Werkzeug nach Beendigung der Grafik an die maximale benutzte Y-Position fährt<br><b>$moveto00</b> Code der das Werkzeug nach Beendigung der Grafik an Position 0/0 fährt<br>alles nach <b>;</b> sind Kommentare"
+		"gcodeplatzhaltertext":"Mit Platzhalter können Datenabhängige Daten eingefügt werden:<br><b>$sysinfo</b> allgemeine Infos eingefügen<br><b>$movetoYmax</b> Code der das Werkzeug nach Beendigung der Grafik an die maximale benutzte Y-Position fährt<br><b>$moveto00</b> Code der das Werkzeug nach Beendigung der Grafik an Position 0/0 fährt<br>alles nach <b>;</b> sind Kommentare",
+		
+		"titel_importeinstellungen":"Importoptionen",
+		"text_importeinstellungen":"Je höher der Wert, um so mehr Zwischenpunkte werden erzeugt."
 		}
 	},
 	{"language":"EN",
@@ -91,7 +96,9 @@ var sprachen=[
 		"clearZeichnung":"Delete the drawing",
 		"dellaststroke":"Delete the last stroke (strg+z)",
 		"loadgcode":"load grafik",
-
+		"importoption":"import options",
+		"genauiggkeit":"accuracy",
+		
 		"speichern":"saving options",
 		"exportgcode":"save",
 		
@@ -115,7 +122,10 @@ var sprachen=[
 		"vorlagenname":"template name",
 		"addtovorlage":"Remember template",
 		
-		"gcodeplatzhaltertext":"With placeholder data-dependent data can be inserted: <br> <b> $ sysinfo </ b> general information inserted <br> <b> $ movetoYmax </ b> Code that moves the tool to the maximum used Y-position<br> everything after <b>; </ b> are comments"
+		"gcodeplatzhaltertext":"With placeholder data-dependent data can be inserted: <br> <b> $ sysinfo </ b> general information inserted <br> <b> $ movetoYmax </ b> Code that moves the tool to the maximum used Y-position<br> everything after <b>; </ b> are comments",
+		
+		"titel_importeinstellungen":"import options",
+		"text_importeinstellungen":"The higher the value, the more intermediate points are created."
 	 }
 	}
 ];
