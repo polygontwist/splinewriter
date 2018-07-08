@@ -16,6 +16,7 @@
   ],
   "homepage": "http://www.a-d-k.de",
   "devDependencies": {
+    "electron": "^2.0.4",
     "electron-prebuilt": "^1.2.0"
   },
   "build": {
