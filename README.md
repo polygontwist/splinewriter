@@ -27,6 +27,7 @@ Ab der Version v0.1.2 ist die gcode-Ausgabe soweit anpassbar, das man auch einen
 * v0.1.1: Linien können so sortiert werden, das die Leerfahrten reduziert werden. Punkteanzeige wird der 1.Punkt rot und die restlichen orange gefärbt.
 * v0.1.2: gcode Einstellungen in Dialog ausgelagert, mit Möglichkeit je nach eigener Maschine Eintellungen vorzunehmen (z.B: für Laser statt Plotter)
 * v0.1.3: kleine fix, eigene Maschinensetups können gespeichert werden.
+* v0.1.5: Importoption hinzugefügt, je nach Regler werden die SVG-Grafiken genauer aber mit mehr Punkten importiert.
 
 # Programm benutzen
 Für Windows-Nutzer liegt eine fertige Installation im Ordner "dist".
