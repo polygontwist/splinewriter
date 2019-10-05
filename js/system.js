@@ -53,10 +53,6 @@ const fs = require('fs');
 var electron_app=function(){
 	var Programmeinstellungen={//als Einstellungen gespeichert
 		windowsize:{x:0,y:0,width:0,height:0},
-		gcodeoptions:{
-			"spiegelY":false,
-			"spiegelX":true				
-		},
 		gcodevorlagen:[
 			{	"name":"Plotter",
 				"erasable":false,
@@ -66,7 +62,9 @@ var electron_app=function(){
 				"gcodeLinienende":	"M400 ; wait\nM280 P0 S40 ;servo up\nG4 P200 ;wait 200ms",
 				"gcodeende":		"M280 P0 S83; servo up\nG4 P200;wait 200ms\n\n$movetoYmax\nM84 ;disable Motors",
 				"movespeed":1500,	//max F5000
-				"drawspeed":600		//max F5000
+				"drawspeed":600,	//max F5000
+				"spiegelY":false,
+				"spiegelX":true				
 			}
 			,		
 			{	"name":"Laser",
@@ -77,7 +75,9 @@ var electron_app=function(){
 				"gcodeLinienende":	"M5",
 				"gcodeende":		"M9 ; Coolant Off\n$movetoStart",
 				"movespeed":600,	//max F5000
-				"drawspeed":600		//max F5000
+				"drawspeed":600,	//max F5000
+				"spiegelY":false,
+				"spiegelX":true	
 			}
 		
 		]
@@ -89,7 +89,9 @@ var electron_app=function(){
 				"gcodeLinienende":	"M400 ; wait\nM280 P0 S40 ;servo up\nG4 P200 ;wait 200ms",
 				"gcodeende":			"M280 P0 S83; servo up\nG4 P200;wait 200ms\n\n$movetoYmax\nM84 ;disable Motors",
 				"movespeed":600,	//max F5000
-				"drawspeed":600		//max F5000
+				"drawspeed":600,	//max F5000
+				"spiegelY":false,
+				"spiegelX":true	
 		},
 		drawoptions:{
 			//Line-Optimierungen
@@ -311,12 +313,21 @@ var electron_app=function(){
 	this.ini=function(zielid){
 		//electron basisc ini
 		var win=remote.getCurrentWindow();
-		appdata.userdokumente=app.app.getPath('documents');// C:\Users\andreas\Documents 
-		if(!fs.existsSync(appdata.userdokumente+"\\"+appdata.ProgrammOrdner)){			
-			fs.mkdirSync(appdata.userdokumente+"\\"+appdata.ProgrammOrdner);		//create dir if not
+		var ordnertrenner="\\";
+		appdata.userdokumente=app.app.getPath('documents');// Windows C:\Users\andreas\Documents 
+		
+		if(appdata.userdokumente.indexOf("/")>-1)ordnertrenner="/"; //Linux "/"
+		
+		
+		if(!fs.existsSync(appdata.userdokumente+ordnertrenner+appdata.ProgrammOrdner)){			
+			fs.mkdirSync(appdata.userdokumente+ordnertrenner+appdata.ProgrammOrdner);		//create dir if not
+			console.log("create",appdata.userdokumente+ordnertrenner+appdata.ProgrammOrdner);
 		}
-		appdata.pathData=appdata.userdokumente+"\\"+appdata.ProgrammOrdner+"\\";
+		appdata.pathData=appdata.userdokumente+ordnertrenner+appdata.ProgrammOrdner+ordnertrenner;
 		appdata.pathData=path.normalize(appdata.pathData);
+
+		console.log("Pfad",appdata.pathData);
+
 		
 		appdata.userbilder=app.app.getPath('pictures');
 		
@@ -731,6 +742,9 @@ var electron_app=function(){
 			var movespeed=Programmeinstellungen.gcodeoptionsV2.movespeed;
 			var drawspeed=Programmeinstellungen.gcodeoptionsV2.drawspeed;
 			
+			var optspiegelnX=Programmeinstellungen.gcodeoptionsV2.spiegelX;
+			var optspiegelnY=Programmeinstellungen.gcodeoptionsV2.spiegelY;
+			
 			var islaser=Programmeinstellungen.gcodeoptionsV2.gcodeLinienbegin.indexOf('M3')>-1;
 			
 			var yMul=1;
@@ -750,12 +764,12 @@ var electron_app=function(){
 						if(p.y>maxY)maxY=p.y;
 				}
 			}
-			if(Programmeinstellungen.gcodeoptions.spiegelY){
+			if(optspiegelnY){
 				yMul=-1;
 				//yVersatz=maxY*10;
 				yVersatz=werkzeuge.get("height");
 			}
-			if(Programmeinstellungen.gcodeoptions.spiegelX){
+			if(optspiegelnX){
 				xMul=-1;
 				//xVersatz=maxX*10;
 				xVersatz=werkzeuge.get("width");
@@ -1613,11 +1627,11 @@ var electron_app=function(){
 			var isline=true;
 			
 			var yMul=1,xMul=1,yVersatz=0,xVersatz=0;
-			if(Programmeinstellungen.gcodeoptions.spiegelY){
+			if(Programmeinstellungen.gcodeoptionsV2.spiegelY){
 				yMul=-1;
 				yVersatz=werkzeuge.get("height");
 			}
-			if(Programmeinstellungen.gcodeoptions.spiegelX){
+			if(Programmeinstellungen.gcodeoptionsV2.spiegelX){
 				xMul=-1;
 				xVersatz=werkzeuge.get("width");
 			}
@@ -2248,7 +2262,7 @@ var electron_app=function(){
 			var label,span,inpElementeNr=inpElementeList.length;
 			var iid='input_'+typ+'_'+inpElementeNr;
 			
-			if(addtolist===false)iid=undefined;
+			if(addtolist===false)iid='input_'+typ+'_cn'+ziel.childNodes.length;
 			
 			if(sEinheit!=undefined || typ!="button"){
 				blockdiv=cE(ziel,"div");
@@ -2377,6 +2391,8 @@ var electron_app=function(){
 			input_gcodeende,
 			inpbutt_drawspeed,
 			inpbutt_movespeed,
+			inpbutt_mirrowX,
+			inpbutt_mirrowY,
 			inpbutt_vorlagenname,
 			zielliste;
 		
@@ -2397,7 +2413,9 @@ var electron_app=function(){
 				"gcodeLinienende":	input_gcodeLinienende.getVal(),
 				"gcodeende":		input_gcodeende.getVal(),
 				"movespeed":		inpbutt_drawspeed.getVal(),	//max F5000
-				"drawspeed":		inpbutt_movespeed.getVal()		//max F5000				
+				"drawspeed":		inpbutt_movespeed.getVal(),	//max F5000				
+				"spiegelX":			inpbutt_mirrowX.getVal(),
+				"spiegelY":			inpbutt_mirrowY.getVal()		
 			}
 			Programmeinstellungen.gcodevorlagen.push(neueVorlage);
 			
@@ -2466,6 +2484,18 @@ var electron_app=function(){
 			
 			
 			
+			inpbutt_mirrowX=new inputElement(getWort('spiegelX'),'checkbox',vorlageninputgruppe,'',false);
+			inpbutt_mirrowX.setVal(Programmeinstellungen.gcodeoptionsV2.spiegelX);
+			inpbutt_mirrowX.setdata({"node":inpbutt_mirrowX,"id":"spiegelX"});
+			inpbutt_mirrowX.addEventFunc(changegcodeElemente);
+			
+			inpbutt_mirrowY=new inputElement(getWort('spiegelY'),'checkbox',vorlageninputgruppe,'',false);
+			inpbutt_mirrowY.setVal(Programmeinstellungen.gcodeoptionsV2.spiegelY);
+			inpbutt_mirrowY.setdata({"node":inpbutt_mirrowY,"id":"spiegelY"});
+			inpbutt_mirrowY.addEventFunc(changegcodeElemente);
+			
+			
+			
 			inpbutt_vorlagenname=new inputElement(getWort('vorlagenname'),'text',vorlageninputgruppe,undefined,false);
 			inpbutt_vorlagenname.setVal("Vorlage "+Programmeinstellungen.gcodevorlagen.length);
 			inpbutt_vorlagenname.addEventFunc(function(v){});
@@ -2492,7 +2522,9 @@ var electron_app=function(){
 			input_gcodeLinienende.setVal(data.daten.gcodeLinienende);
 			input_gcodeende.setVal(data.daten.gcodeende);
 			inpbutt_drawspeed.setVal(data.daten.drawspeed);
-			inpbutt_movespeed.setVal(data.daten.movespeed);
+			inpbutt_movespeed.setVal(data.daten.movespeed);			
+			inpbutt_mirrowX.setVal(data.daten.spiegelX);
+			inpbutt_mirrowY.setVal(data.daten.spiegelY);
 			
 			Programmeinstellungen.gcodeoptionsV2.gcodeprestart=data.daten.gcodeprestart;
 			Programmeinstellungen.gcodeoptionsV2.gcodestart=data.daten.gcodestart;
@@ -2500,6 +2532,8 @@ var electron_app=function(){
 			Programmeinstellungen.gcodeoptionsV2.gcodeLinienende=data.daten.gcodeLinienende;
 			Programmeinstellungen.gcodeoptionsV2.drawspeed=data.daten.drawspeed;
 			Programmeinstellungen.gcodeoptionsV2.movespeed=data.daten.movespeed;
+			Programmeinstellungen.gcodeoptionsV2.spiegelX=data.daten.spiegelX;
+			Programmeinstellungen.gcodeoptionsV2.spiegelY=data.daten.spiegelY;
 			saveSettings();
 			
 		}

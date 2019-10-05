@@ -266,6 +266,10 @@ input[type="text"]:disabled{
     display: inline-block;
 }
 
+#dialogcontent .input2 div{
+	margin-bottom:5px;
+}
+
 .unsichtbar{
 	display:none;
 }

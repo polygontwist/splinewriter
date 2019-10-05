@@ -59,6 +59,9 @@ var sprachen=[
 		"vorlagenname":"Vorlagenname",
 		"addtovorlage":"Vorlage merken",
 		
+		"spiegelX":"X-Achse spiegeln",
+		"spiegelY":"Y-Achse spiegeln",
+		
 		"gcodeplatzhaltertext":"Mit Platzhalter können Datenabhängige Daten eingefügt werden:<br><b>$sysinfo</b> allgemeine Infos eingefügen<br><b>$movetoYmax</b> Code der das Werkzeug nach Beendigung der Grafik an die maximale benutzte Y-Position fährt<br><b>$moveto00</b> Code der das Werkzeug nach Beendigung der Grafik an Position 0/0 fährt<br>alles nach <b>;</b> sind Kommentare",
 		
 		"titel_importeinstellungen":"Importoptionen",
@@ -121,6 +124,9 @@ var sprachen=[
 		"drawspeed":"drawspeed",
 		"vorlagenname":"template name",
 		"addtovorlage":"Remember template",
+		
+		"spiegelX":"mirror X axis",
+		"spiegelY":"mirror Y axis",
 		
 		"gcodeplatzhaltertext":"With placeholder data-dependent data can be inserted: <br> <b> $ sysinfo </ b> general information inserted <br> <b> $ movetoYmax </ b> Code that moves the tool to the maximum used Y-position<br> everything after <b>; </ b> are comments",
 		
