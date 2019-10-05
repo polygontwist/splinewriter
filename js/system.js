@@ -51,8 +51,11 @@ const fs = require('fs');
 
 
 var electron_app=function(){
+	var progversion="0.1.7";
+	
 	var Programmeinstellungen={//als Einstellungen gespeichert
 		windowsize:{x:0,y:0,width:0,height:0},
+		sprache:"DE",
 		gcodevorlagen:[
 			{	"name":"Plotter",
 				"erasable":false,
@@ -63,8 +66,11 @@ var electron_app=function(){
 				"gcodeende":		"M280 P0 S83; servo up\nG4 P200;wait 200ms\n\n$movetoYmax\nM84 ;disable Motors",
 				"movespeed":1500,	//max F5000
 				"drawspeed":600,	//max F5000
+				"spiegelX":true,
 				"spiegelY":false,
-				"spiegelX":true				
+				"negativX":false,
+				"negativY":false
+				
 			}
 			,		
 			{	"name":"Laser",
@@ -76,22 +82,26 @@ var electron_app=function(){
 				"gcodeende":		"M9 ; Coolant Off\n$movetoStart",
 				"movespeed":600,	//max F5000
 				"drawspeed":600,	//max F5000
+				"spiegelX":true,
 				"spiegelY":false,
-				"spiegelX":true	
+				"negativX":false,
+				"negativY":false
 			}
 		
 		]
 		,
 		gcodeoptionsV2:{
-				"gcodeprestart":		"; $sysinfo\nG21 ; set units to millimeters\nG90 ; use absolute coordinates\n",//Zeilenumbruch mit "\n"
-				"gcodestart":			"M400 ; Wait for current moves to finish\nM280 P0 S83 ;Servo up\nG4 P200 ;wait 200ms",
+				"gcodeprestart":	"; $sysinfo\nG21 ; set units to millimeters\nG90 ; use absolute coordinates\n",//Zeilenumbruch mit "\n"
+				"gcodestart":		"M400 ; Wait for current moves to finish\nM280 P0 S83 ;Servo up\nG4 P200 ;wait 200ms",
 				"gcodeLinienbegin":	"M400 ; wait\nM280 P0 S0 ;servo down\nG4 P200 ;wait 200ms",
 				"gcodeLinienende":	"M400 ; wait\nM280 P0 S40 ;servo up\nG4 P200 ;wait 200ms",
 				"gcodeende":			"M280 P0 S83; servo up\nG4 P200;wait 200ms\n\n$movetoYmax\nM84 ;disable Motors",
 				"movespeed":600,	//max F5000
 				"drawspeed":600,	//max F5000
+				"spiegelX":true,
 				"spiegelY":false,
-				"spiegelX":true	
+				"negativX":false,
+				"negativY":false	
 		},
 		drawoptions:{
 			//Line-Optimierungen
@@ -375,6 +385,7 @@ var electron_app=function(){
 		var inpWidth;
 		var inpHeight;
 		var inpZoom;
+		
 		//var inpAnzahlStriche;
 		var inpShowgrid;
 		var inpShowdots;
@@ -436,7 +447,7 @@ var electron_app=function(){
 		//--ini--		
 		var create=function(){
 			//
-			var div,inpbutt,gruppe,h1;
+			var div,inpbutt,gruppe,h1,i;
 			var werkznode=cE(zielNode,"div","werkzeuge");
 			
 			//Werkzeuge ein/ausfahren
@@ -444,6 +455,9 @@ var electron_app=function(){
 			openclosebutt.innerHTML="";
 			openclosebutt.href="#";
 			openclosebutt.addEventListener('click',wopenclose);
+			
+			if(Programmeinstellungen.sprache!=undefined)
+				spracheaktiv=Programmeinstellungen.sprache;
 			
 		
 		/*
@@ -488,7 +502,6 @@ var electron_app=function(){
 			inpZoom.setVal(Programmeinstellungen.drawoptions.blatt.zoom);
 			inpZoom.setMinMaxStp(0.1,5,0.1);
 			inpZoom.addEventFunc(changeElemente);
-			
 			
 			//gruppe=cE(werkznode,"article");
 			//import/export
@@ -582,6 +595,22 @@ var electron_app=function(){
 			gruppe=cE(werkznode,"article");
 			h1=cE(gruppe,"h1");
 			h1.innerHTML=getWort("controlandsave")+":";
+			
+			//Sprache
+			var spliste=[];
+			for(i=0;i<sprachen.length;i++){
+				spliste.push(sprachen[i].language);
+			}
+			
+			inpbutt=new inputElement(getWort('sprache'),'select',gruppe);
+			inpbutt.addListe(spliste);
+			inpbutt.setVal(Programmeinstellungen.sprache);
+			inpbutt.addEventFunc( function(v){ 
+							Programmeinstellungen.sprache=v;
+							spracheaktiv=v;
+							saveSettings();
+							alert(getWort('bitteneustarten'));
+							} );
 			
 			//gcode Einstellungen
 			inpbutt=new inputElement(getWort('einstllungengcode'),'button',gruppe);
@@ -745,6 +774,9 @@ var electron_app=function(){
 			var optspiegelnX=Programmeinstellungen.gcodeoptionsV2.spiegelX;
 			var optspiegelnY=Programmeinstellungen.gcodeoptionsV2.spiegelY;
 			
+			var optnegativX=Programmeinstellungen.gcodeoptionsV2.negativX;
+			var optnegativY=Programmeinstellungen.gcodeoptionsV2.negativY;
+			
 			var islaser=Programmeinstellungen.gcodeoptionsV2.gcodeLinienbegin.indexOf('M3')>-1;
 			
 			var yMul=1;
@@ -790,7 +822,8 @@ var electron_app=function(){
 					yy=rundeauf(p.y*yMul+yVersatz,3);
 					if(xx>maxXX)maxXX=xx;
 					if(yy>maxYY)maxYY=yy;
-					
+					if(optnegativX)xx=xx*-1;
+					if(optnegativY)yy=yy*-1;
 					
 					if(pz==0){
 						//moveTo
@@ -1708,8 +1741,12 @@ var electron_app=function(){
 					for(t=1;t<s.length;t++){//Einzelwerte parsen
 						bef=s[t];
 						value=parseFloat(bef.slice(1));
-						if(bef.indexOf('X')==0){xx=rundeauf(value*factorToMM*xMul+xVersatz,3);}//rundeauf drei Kommastellen
-						if(bef.indexOf('Y')==0){yy=rundeauf(value*factorToMM*yMul+yVersatz,3);}
+						if(bef.indexOf('X')==0){
+							xx=rundeauf(value*factorToMM*xMul+xVersatz,3);//rundeauf drei Kommastellen
+						}
+						if(bef.indexOf('Y')==0){
+							yy=rundeauf(value*factorToMM*yMul+yVersatz,3);
+						}
 						if(bef.indexOf('Z')==0){zz=value*factorToMM;}
 						
 						if(bef.indexOf('S')==0){staerke=value;}//gbrl Stärke
@@ -2081,7 +2118,7 @@ var electron_app=function(){
 		
 		//--ini--
 		var create=function(){			
-			apptitel=document.title;
+			apptitel=document.title+' '+progversion;
 			
 			basisnode=cE(zielNode,"div","zeichenfeld");
 			
@@ -2167,6 +2204,7 @@ var electron_app=function(){
 		var basiselement=undefined;
 		var showvalueinunity=false;
 		var einheitnode=undefined;
+		var liste=[];
 		
 		var fchange=[];
 		var lokaldata=undefined;
@@ -2189,6 +2227,19 @@ var electron_app=function(){
 		this.getName=function(){return caption;}
 		
 		this.setVal=function(val){
+			var i,nodes;
+			if(input.type=="select"){
+				nodes=input.getElementsByTagName('option');
+				if(nodes.length==liste.length){
+					for(i=0;i<liste.length;i++){
+						if(nodes[i].value==liste[i])
+							nodes.setAttribute("selected","true");
+						else
+							nodes.removeAttribute("selected");
+					}
+				}
+			}				
+			else
 			if(input.type=="textarea"){
 				input.innerHTML=val;
 				input.value=val;
@@ -2198,6 +2249,7 @@ var electron_app=function(){
 				input.checked=val;
 				else
 				input.value=val;
+			
 		}
 				
 		this.getVal=function(){
@@ -2230,6 +2282,17 @@ var electron_app=function(){
 		
 		this.setdata=function(daten){lokaldata=daten;}
 		this.getdata=function(){return lokaldata;}
+		
+		this.addListe=function(newliste){
+			var i,o;
+			liste=[];
+			for(i=0;i<newliste.length;i++){
+				o=cE(input,"option");
+				o.innerHTML=getWort(newliste[i]);
+				o.value=newliste[i];console.log(o)
+				liste.push(newliste[i]);
+			}
+		}
 		
 		//--action--
 		var inpchange=function(e){
@@ -2281,14 +2344,14 @@ var electron_app=function(){
 				}
 			}			
 			
-			if(typ=="textarea")
-				input=cE(blockdiv,typ,iid);		//textbox
-				else{
+			if(typ=="textarea" || typ=="select")
+				input=cE(blockdiv,typ,iid);		//textbox/dropdown-liste
+			else{
 				input=cE(blockdiv,"input",iid);
 				input.type=typ;
-				}
+			}
 			
-			if(typ=="button"  ){
+			if(typ=="button"){
 				input.value=caption;
 			}
 			if(basiselement==undefined)basiselement=input;
@@ -2298,7 +2361,7 @@ var electron_app=function(){
 				input.addEventListener('click',inpchange);
 				valsendenin=1;
 			}else
-			if(typ=="range"){
+			if(typ=="range" || typ=="select"){
 				input.addEventListener('change',inpchange);
 			}else{
 				input.addEventListener('change',inpchange);
@@ -2393,6 +2456,8 @@ var electron_app=function(){
 			inpbutt_movespeed,
 			inpbutt_mirrowX,
 			inpbutt_mirrowY,
+			inpbutt_negativX,
+			inpbutt_negativY,
 			inpbutt_vorlagenname,
 			zielliste;
 		
@@ -2415,7 +2480,9 @@ var electron_app=function(){
 				"movespeed":		inpbutt_drawspeed.getVal(),	//max F5000
 				"drawspeed":		inpbutt_movespeed.getVal(),	//max F5000				
 				"spiegelX":			inpbutt_mirrowX.getVal(),
-				"spiegelY":			inpbutt_mirrowY.getVal()		
+				"spiegelY":			inpbutt_mirrowY.getVal(),
+				"negativX":			inpbutt_negativX.getVal(),
+				"negativY":			inpbutt_negativY.getVal()		
 			}
 			Programmeinstellungen.gcodevorlagen.push(neueVorlage);
 			
@@ -2496,6 +2563,17 @@ var electron_app=function(){
 			
 			
 			
+			inpbutt_negativX=new inputElement(getWort('negativX')+' (<b>'+getWort("wertenegativ")+'</b>)','checkbox',vorlageninputgruppe,'',false);
+			inpbutt_negativX.setVal(Programmeinstellungen.gcodeoptionsV2.negativX);
+			inpbutt_negativX.setdata({"node":inpbutt_negativX,"id":"negativX"});
+			inpbutt_negativX.addEventFunc(changegcodeElemente);
+			
+			inpbutt_negativY=new inputElement(getWort('negativY')+' (<b>'+getWort("wertenegativ")+'</b>)','checkbox',vorlageninputgruppe,'',false);
+			inpbutt_negativY.setVal(Programmeinstellungen.gcodeoptionsV2.negativY);
+			inpbutt_negativY.setdata({"node":inpbutt_negativY,"id":"negativY"});
+			inpbutt_negativY.addEventFunc(changegcodeElemente);
+						
+			
 			inpbutt_vorlagenname=new inputElement(getWort('vorlagenname'),'text',vorlageninputgruppe,undefined,false);
 			inpbutt_vorlagenname.setVal("Vorlage "+Programmeinstellungen.gcodevorlagen.length);
 			inpbutt_vorlagenname.addEventFunc(function(v){});
@@ -2525,6 +2603,8 @@ var electron_app=function(){
 			inpbutt_movespeed.setVal(data.daten.movespeed);			
 			inpbutt_mirrowX.setVal(data.daten.spiegelX);
 			inpbutt_mirrowY.setVal(data.daten.spiegelY);
+			inpbutt_negativX.setVal(data.daten.negativX);
+			inpbutt_negativY.setVal(data.daten.negativY);
 			
 			Programmeinstellungen.gcodeoptionsV2.gcodeprestart=data.daten.gcodeprestart;
 			Programmeinstellungen.gcodeoptionsV2.gcodestart=data.daten.gcodestart;
@@ -2534,6 +2614,8 @@ var electron_app=function(){
 			Programmeinstellungen.gcodeoptionsV2.movespeed=data.daten.movespeed;
 			Programmeinstellungen.gcodeoptionsV2.spiegelX=data.daten.spiegelX;
 			Programmeinstellungen.gcodeoptionsV2.spiegelY=data.daten.spiegelY;
+			Programmeinstellungen.gcodeoptionsV2.negativX=data.daten.negativX;
+			Programmeinstellungen.gcodeoptionsV2.negativY=data.daten.negativY;
 			saveSettings();
 			
 		}

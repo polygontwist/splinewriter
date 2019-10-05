@@ -62,6 +62,13 @@ var sprachen=[
 		"spiegelX":"X-Achse spiegeln",
 		"spiegelY":"Y-Achse spiegeln",
 		
+		"negativX":"X-Achse negieren",
+		"negativY":"Y-Achse negieren",
+		"wertenegativ":"Koordinaten sind dann negativ!",
+		
+		"sprache":"Sprache",
+		"bitteneustarten":"Programm bitte neustarten.",
+		
 		"gcodeplatzhaltertext":"Mit Platzhalter können Datenabhängige Daten eingefügt werden:<br><b>$sysinfo</b> allgemeine Infos eingefügen<br><b>$movetoYmax</b> Code der das Werkzeug nach Beendigung der Grafik an die maximale benutzte Y-Position fährt<br><b>$moveto00</b> Code der das Werkzeug nach Beendigung der Grafik an Position 0/0 fährt<br>alles nach <b>;</b> sind Kommentare",
 		
 		"titel_importeinstellungen":"Importoptionen",
@@ -74,15 +81,15 @@ var sprachen=[
 		"loading":"loading...",
 		"Strichstaerke":"Line width",
 		"Striche":"lines",
-		"Zeichenflaeche":"Canvas size",
+		"Zeichenflaeche":"canvas size",
 		"breite":"width",
 		"hoehe":"height",
 		"zoomfactor":"zoom",
-		"loadvorlage":"Load template",
+		"loadvorlage":"load template",
 		"opacity":"transparency",
-		"showgrid":"Show grid",
-		"showdots":"Show points",
-		"showdraw":"Show drawing",
+		"showgrid":"show grid",
+		"showdots":"show points",
+		"showdraw":"show drawing",
 		"optimizestrokes":"optimize strokes",
 		"frageReverseLines":"Can the line direction be reversed?",
 		 
@@ -114,7 +121,7 @@ var sprachen=[
 		
 		"titel_einstellungen":"machine settings",
 		"buttclose":"close",
-		"deletevorlage":"Delete template",
+		"deletevorlage":"delete template",
 		"gcodeprestart":	"gcode at the beginning of the file", 
 		"gcodestart":		"gcode when program starts", 
 		"gcodeLinienbegin": "gcode when line starts",
@@ -123,10 +130,23 @@ var sprachen=[
 		"movespeed":"movespeed",
 		"drawspeed":"drawspeed",
 		"vorlagenname":"template name",
-		"addtovorlage":"Remember template",
+		"addtovorlage":"remember template",
 		
 		"spiegelX":"mirror X axis",
 		"spiegelY":"mirror Y axis",
+		
+		"negativX":"negate the X axis",
+		"negativY":"negate the Y axis",
+		"wertenegativ":"Coordinates are then negative!",
+		
+		"sprache":"language",
+		"bitteneustarten":"Please restart the program.",
+		
+		"nullpunkt":"starting point",
+		"ol":"top left",
+		"or":"top right",
+		"ul":"bottom left",
+		"ur":"bottom right",
 		
 		"gcodeplatzhaltertext":"With placeholder data-dependent data can be inserted: <br> <b> $ sysinfo </ b> general information inserted <br> <b> $ movetoYmax </ b> Code that moves the tool to the maximum used Y-position<br> everything after <b>; </ b> are comments",
 		

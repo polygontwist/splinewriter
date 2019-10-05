@@ -29,6 +29,7 @@ Ab der Version v0.1.2 ist die gcode-Ausgabe soweit anpassbar, das man auch einen
 * v0.1.3: kleine fix, eigene Maschinensetups können gespeichert werden.
 * v0.1.5: Importoption hinzugefügt, je nach Regler werden die SVG-Grafiken genauer aber mit mehr Punkten importiert.
 * v0.1.6: Einstellungen für Achsenspiegelungen; bugfixes (Pfade unter Linux, Checkbox-ID)
+* v0.1.7: Einstellungen: negative Koordinaten, wenn z.B. "Y nach unten fahren" negative Koordianten erfordert
 
 # Programm benutzen
 Für Windows-Nutzer liegt eine fertige Installation im Ordner "dist".
