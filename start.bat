@@ -1,3 +1,4 @@
 rem @echo off
-electron .
+rem electron .
+npm start
 exit
