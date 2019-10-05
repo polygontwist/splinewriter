@@ -37,11 +37,15 @@ Für Windows-Nutzer liegt eine fertige Installation im Ordner "dist".
 npm und git sollte installiert sein:
 
 > git clone https://github.com/polygontwist/splinewriter
+
 > cd splinewriter
+
 > npm install && npm start
 
 Nach der Installation kann mit
+
 > npm start
+
 das Projekt ausgeführt werden.
 
 # Projekt bearbeiten Windows
