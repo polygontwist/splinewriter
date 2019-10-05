@@ -28,11 +28,23 @@ Ab der Version v0.1.2 ist die gcode-Ausgabe soweit anpassbar, das man auch einen
 * v0.1.2: gcode Einstellungen in Dialog ausgelagert, mit Möglichkeit je nach eigener Maschine Eintellungen vorzunehmen (z.B: für Laser statt Plotter)
 * v0.1.3: kleine fix, eigene Maschinensetups können gespeichert werden.
 * v0.1.5: Importoption hinzugefügt, je nach Regler werden die SVG-Grafiken genauer aber mit mehr Punkten importiert.
+* v0.1.6: Einstellungen für Achsenspiegelungen; bugfixes (Pfade unter Linux, Checkbox-ID)
 
 # Programm benutzen
 Für Windows-Nutzer liegt eine fertige Installation im Ordner "dist".
 
-# Projekt bearbeiten
+# Projekt bearbeiten Linux
+npm und git sollte installiert sein:
+
+> git clone https://github.com/polygontwist/splinewriter
+> cd splinewriter
+> npm install && npm start
+
+Nach der Installation kann mit
+> npm start
+das Projekt ausgeführt werden.
+
+# Projekt bearbeiten Windows
 
 Für die Bearbeitung diese Projektes benötigt man:<br>
 https://nodejs.org dabei ist der npm-Packetmanager<br>
@@ -46,11 +58,11 @@ mit<br>
 kommt noch der builder zum packen des Projektes hinzu.
 
 In der Eingabeaufforderung kann, im Verzeichnis des Projektes mit<br>
-> electron .
+> npm start
 
 das Programm gestartet werden (Entwicklungsversion).<br>
 Mit<br>
-> build
+> npm run dist --ia32
 
 kann ein Packet zur Installation erzeugt werden.
 Das kann dann wie jedes normale Programm von Nutzern installiert werden. 
