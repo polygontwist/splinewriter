@@ -6,4 +6,4 @@ mac:
   category: public.app-category.utilities
 win:
   icon: build/icon.ico
-electronVersion: 1.4.13
+electronVersion: 6.1.7

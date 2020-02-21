@@ -4,27 +4,25 @@
   "description": "SplineWriter",
   "version": "0.1.7",
   "author": {
-	"name":"Andreas Kosmehl",
-	"email":"ak@a-d-k.de)",
+    "name": "Andreas Kosmehl",
+    "email": "ak@a-d-k.de)",
     "url": "https://www.a-d-k.de"
   },
   "main": "main.js",
   "repository": "polygontwist//splinewriter",
-  "license": "MIT",  
+  "license": "MIT",
   "scripts": {
     "start": "electron .",
     "pack": "electron-builder --dir",
     "dist": "electron-builder"
   },
-  
   "keywords": [
     "Spline",
     "Writer",
-	"gcode",
-	"svg"
+    "gcode",
+    "svg"
   ],
   "homepage": "http://www.a-d-k.de",
-  
   "build": {
     "appId": "de.adk.spw",
     "mac": {
@@ -33,5 +31,8 @@
     "win": {
       "icon": "build/icon.ico"
     }
+  },
+  "devDependencies": {
+    "electron": "^6.0.7"
   }
 }
