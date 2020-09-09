@@ -31,7 +31,7 @@ Ab der Version v0.1.2 ist die gcode-Ausgabe soweit anpassbar, das man auch einen
 * v0.1.6: Einstellungen für Achsenspiegelungen; bugfixes (Pfade unter Linux, Checkbox-ID)
 * v0.1.7: Einstellungen: negative Koordinaten, wenn z.B. "Y nach unten fahren" negative Koordianten erfordert
 
-Ende der Entwicklung mit Elektron, weiter gehts im Webbrowser:
+Ende der Entwicklung als Electron-App, weiter gehts im Webbrowser:
 https://a-d-k.de/20200909_175137-SplinewriterWebApp.htm
 
 # Programm benutzen
