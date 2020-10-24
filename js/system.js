@@ -51,7 +51,7 @@ const fs = require('fs');
 
 
 var electron_app=function(){
-	var progversion="0.1.7";
+	var progversion="0.1.8";
 	
 	var Programmeinstellungen={//als Einstellungen gespeichert
 		windowsize:{x:0,y:0,width:0,height:0},
@@ -216,6 +216,12 @@ var electron_app=function(){
 	}
 	
 	function getMouseP(e){
+		if(e.changedTouches!=undefined){//touch devices
+			var te=e.changedTouches[0];
+			return {x:te.clientX ,y:te.clientY}
+		}
+		
+		//mausdevices
 		return{
 			x:document.all ? window.event.clientX : e.pageX,	//pageX
 			y:document.all ? window.event.clientY : e.pageY
@@ -2152,13 +2158,16 @@ var electron_app=function(){
 			canvasDraw.addEventListener('mouseup',mausup );
 			canvasDraw.addEventListener('mouseout',mausout );
 			
+			canvasDraw.addEventListener('touchstart',function(e){mausstat.isdown=false;mausmove(e);mausdown(e)} );
+			canvasDraw.addEventListener('touchmove',mausmove);	
+			canvasDraw.addEventListener('touchend',mausup);
+			canvasDraw.addEventListener('touchcancel',mausup);
+
 			window.addEventListener('keydown',keydown );
 			window.addEventListener('keyup',keyup );
 			window.addEventListener('resize',resizeZF );
 			
-			
-		}
-		
+		}		
 		create();
 	}
 	
