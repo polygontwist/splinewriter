@@ -62,7 +62,7 @@ var electron_app=function(){
 				"gcodeprestart":	";$sysinfo\nG21 ; set units to millimeters\nG90 ; use absolute coordinates\n\n",//Zeilenumbruch mit "\n"
 				"gcodestart":		"M400 ; Wait for current moves to finish\nM280 P0 S83 ;Servo up\nG4 P200 ;wait 200ms",
 				"gcodeLinienbegin":	"M400 ; wait\nM280 P0 S0 ;servo down\nG4 P200 ;wait 200ms",
-				"gcodeLinienende":	"M400 ; wait\nM280 P0 S40 ;servo up\nG4 P200 ;wait 200ms",
+				"gcodeLinienende":	"M400 ; wait\nM280 P0 S80 ;servo up\nG4 P200 ;wait 200ms",
 				"gcodeende":		"M280 P0 S83; servo up\nG4 P200;wait 200ms\n\n$movetoYmax\nM84 ;disable Motors",
 				"movespeed":1500,	//max F5000
 				"drawspeed":600,	//max F5000
