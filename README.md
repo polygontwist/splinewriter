@@ -32,8 +32,8 @@ Ab der Version v0.1.2 ist die gcode-Ausgabe soweit anpassbar, das man auch einen
 * v0.1.7: Einstellungen: negative Koordinaten, wenn z.B. "Y nach unten fahren" negative Koordianten erfordert
 * v0.1.8: Touch-Events hinzugefügt
 
-Ende der Entwicklung als Electron-App, weiter gehts im Webbrowser:
-https://a-d-k.de/20200909_175137-SplinewriterWebApp.htm
+Ende der Entwicklung als Electron-App, weiter gehts als Webapp:
+https://github.com/polygontwist/splinewriter-Webapp
 
 # Programm benutzen
 Für Windows-Nutzer liegt eine fertige Installation im Ordner "dist".
